@@ -10,10 +10,7 @@ import (
 )
 
 func (h *Handler) HandleGetUser(ctx *fiber.Ctx) error {
-	var (
-		id = ctx.Params("id")
-	)
-
+	var id = ctx.Params("id")
 	req := getUserRequest{
 		ID: id,
 	}
@@ -81,10 +78,7 @@ func (h *Handler) HandlePostUser(ctx *fiber.Ctx) error {
 }
 
 func (h *Handler) HandleDeleteUser(ctx *fiber.Ctx) error {
-	var (
-		id = ctx.Params("id")
-	)
-
+	var id = ctx.Params("id")
 	req := getUserRequest{
 		ID: id,
 	}

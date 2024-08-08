@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	withLog    = false
-	collection = "users"
+	withLog            = false
+	collection         = "users"
+	invalidMaxCharName = "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"
 )
 
 type testDb struct {
@@ -74,8 +75,8 @@ func TestPostUser(t *testing.T) {
 		}
 		invalidMaxNames := types.CreateUserParams{
 			Email:     "test@test.com",
-			FirstName: "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
-			LastName:  "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+			FirstName: invalidMaxCharName,
+			LastName:  invalidMaxCharName,
 			Password:  "1234567",
 		}
 		invalidAlphaNames := types.CreateUserParams{
@@ -105,19 +106,19 @@ func TestPostUser(t *testing.T) {
 				expected: `{"errors":{"Email":"email - invalid"}}`,
 			},
 			{
-				expect:   "Should return invalid firstName minimum field error",
+				expect:   "Should return invalid firstName and lastName minimum field error",
 				input:    invalidMinNames,
 				status:   422,
 				expected: `{"errors":{"FirstName":"min - invalid","LastName":"min - invalid"}}`,
 			},
 			{
-				expect:   "Should return invalid firstName maximum field error",
+				expect:   "Should return invalid firstName and lastName maximum field error",
 				input:    invalidMaxNames,
 				status:   422,
 				expected: `{"errors":{"FirstName":"max - invalid","LastName":"max - invalid"}}`,
 			},
 			{
-				expect:   "Should return invalid firstName maximum field error",
+				expect:   "Should return invalid firstName and lastName maximum field error",
 				input:    invalidAlphaNames,
 				status:   422,
 				expected: `{"errors":{"FirstName":"alpha - invalid","LastName":"alpha - invalid"}}`,
@@ -229,7 +230,7 @@ func TestHandleGetUser(t *testing.T) {
 
 	app.Get("/:id", handlers.HandleGetUser)
 
-	t.Run("Validations userId is ObjectId", func(t *testing.T) {
+	t.Run("Validations get user with userId is ObjectId", func(t *testing.T) {
 		type test struct {
 			id       string
 			expect   string
@@ -258,7 +259,6 @@ func TestHandleGetUser(t *testing.T) {
 					t.Errorf("expected status code %d but return %d", tc.status, resp.StatusCode)
 				}
 			})
-
 			t.Run(tc.expect, func(t *testing.T) {
 				body := make([]byte, resp.ContentLength)
 				resp.Body.Read(body)
@@ -295,6 +295,108 @@ func TestHandleGetUser(t *testing.T) {
 		}
 		if user.Email != fixtureUser.Email {
 			t.Errorf("expected Email %s but got %s", fixtureUser.Email, user.Email)
+		}
+	})
+}
+
+func TestHandlePutUser(t *testing.T) {
+	tdb, coll, app, handlers := setup()
+	defer tdb.tearDown(t)
+
+	newUsers := []interface{}{
+		types.User{FirstName: "AA", LastName: "AA", Email: "aa@test.com", EncryptedPassword: "encrypted"},
+		types.User{FirstName: "BB", LastName: "BB", Email: "bb@test.com", EncryptedPassword: "encrypted"},
+	}
+
+	// fixtureUser, _ := newUsers[0].(types.User)
+
+	result, err := coll.InsertMany(context.TODO(), newUsers)
+	if err != nil {
+		t.Error(err)
+	}
+
+	app.Put("/:id", handlers.HandlePutUser)
+
+	t.Run("Validations put user with userId is ObjectId", func(t *testing.T) {
+		objectId := result.InsertedIDs[0].(primitive.ObjectID)
+		invalidMinFields := types.UpdateUserParams{
+			FirstName: "T",
+			LastName:  "F",
+		}
+		invalidMaxFields := types.UpdateUserParams{
+			FirstName: invalidMaxCharName,
+			LastName:  invalidMaxCharName,
+		}
+		invalidAlphaFields := types.UpdateUserParams{
+			FirstName: "Test1",
+			LastName:  "Test2",
+		}
+		validParams := types.UpdateUserParams{
+			FirstName: "Foo",
+			LastName:  "Bar",
+		}
+
+		type test struct {
+			id       string
+			input    types.UpdateUserParams
+			expect   string
+			expected string
+			status   int
+		}
+
+		tests := []test{
+			{
+				id:       objectId.Hex(),
+				expect:   "Should return invalid firstName and lastName minimum field error",
+				input:    invalidMinFields,
+				status:   422,
+				expected: `{"errors":{"FirstName":"min - invalid","LastName":"min - invalid"}}`,
+			},
+			{
+				id:       objectId.Hex(),
+				expect:   "Should return invalid firstName and lastName maximum field error",
+				input:    invalidMaxFields,
+				status:   422,
+				expected: `{"errors":{"FirstName":"max - invalid","LastName":"max - invalid"}}`,
+			},
+			{
+				id:       objectId.Hex(),
+				expect:   "Should return invalid firstName and lastName maximum field error",
+				input:    invalidAlphaFields,
+				status:   422,
+				expected: `{"errors":{"FirstName":"alpha - invalid","LastName":"alpha - invalid"}}`,
+			},
+			{
+				id:       "invalidId",
+				input:    validParams,
+				expect:   "must return required and invalid fields",
+				status:   422,
+				expected: `{"errors":{"ID":"id - invalid"}}`,
+			},
+		}
+
+		for _, tc := range tests {
+			b, _ := json.Marshal(tc.input)
+			req := utils.NewRequestWithHeader("PUT", fmt.Sprintf("/%s", tc.id), bytes.NewReader(b))
+			resp, err := app.Test(req)
+			if err != nil {
+				t.Error(err)
+			}
+
+			t.Run(fmt.Sprintf("should return %d status code", tc.status), func(t *testing.T) {
+				if resp.StatusCode != tc.status {
+					t.Errorf("expected status code %d but return %d", tc.status, resp.StatusCode)
+				}
+			})
+
+			t.Run(tc.expect, func(t *testing.T) {
+				body := make([]byte, resp.ContentLength)
+				resp.Body.Read(body)
+
+				if string(body) != tc.expected {
+					t.Errorf("should return %s but received %s", tc.expected, string(body))
+				}
+			})
 		}
 	})
 }
