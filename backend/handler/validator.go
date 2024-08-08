@@ -11,7 +11,7 @@ type Validator struct {
 
 func NewValidator() *Validator {
 	v := validator.New()
-	err := v.RegisterValidation("objectId", validateObjectID)
+	err := v.RegisterValidation("id", validateObjectID)
 	if err != nil {
 		panic(err)
 	}

@@ -149,8 +149,7 @@ func TestPostUser(t *testing.T) {
 				resp.Body.Read(body)
 
 				if string(body) != tc.expected {
-					t.Log(string(body))
-					t.Errorf("doesn't matched with the expected error")
+					t.Errorf("should return %s but received %s", tc.expected, string(body))
 				}
 			})
 		}
@@ -221,6 +220,8 @@ func TestHandleGetUser(t *testing.T) {
 		types.User{FirstName: "BB", LastName: "BB", Email: "bb@test.com", EncryptedPassword: "encrypted"},
 	}
 
+	fixtureUser, _ := newUsers[0].(types.User)
+
 	result, err := coll.InsertMany(context.TODO(), newUsers)
 	if err != nil {
 		t.Error(err)
@@ -228,15 +229,54 @@ func TestHandleGetUser(t *testing.T) {
 
 	app.Get("/:id", handlers.HandleGetUser)
 
-	t.Run("get user", func(t *testing.T) {
+	t.Run("Validations userId is ObjectId", func(t *testing.T) {
+		type test struct {
+			id       string
+			expect   string
+			expected string
+			status   int
+		}
+
+		tests := []test{
+			{
+				id:       "invalidId",
+				expect:   "must return invalid ObjectId",
+				status:   422,
+				expected: `{"errors":{"ID":"id - invalid"}}`,
+			},
+		}
+
+		for _, tc := range tests {
+			req := utils.NewRequestWithHeader("GET", fmt.Sprintf("/%s", tc.id), nil)
+			resp, err := app.Test(req)
+			if err != nil {
+				t.Error(err)
+			}
+
+			t.Run(fmt.Sprintf("should return %d status code", tc.status), func(t *testing.T) {
+				if resp.StatusCode != tc.status {
+					t.Errorf("expected status code %d but return %d", tc.status, resp.StatusCode)
+				}
+			})
+
+			t.Run(tc.expect, func(t *testing.T) {
+				body := make([]byte, resp.ContentLength)
+				resp.Body.Read(body)
+
+				if string(body) != tc.expected {
+					t.Errorf("should return %s but received %s", tc.expected, string(body))
+				}
+			})
+		}
+	})
+
+	t.Run("get user by ID", func(t *testing.T) {
 		objectId := result.InsertedIDs[0].(primitive.ObjectID)
 		req := utils.NewRequestWithHeader("GET", fmt.Sprintf("/%s", objectId.Hex()), nil)
 		res, err := app.Test(req)
 		if err != nil {
 			t.Error(err)
 		}
-
-		fixtureUser, _ := newUsers[0].(types.User)
 
 		var user types.User
 
@@ -257,53 +297,4 @@ func TestHandleGetUser(t *testing.T) {
 			t.Errorf("expected Email %s but got %s", fixtureUser.Email, user.Email)
 		}
 	})
-
-	// t.Run("Validations", func(t *testing.T) {
-	// 	type test struct {
-	// 		expect   string
-	// 		input    types.CreateUserParams
-	// 		expected string
-	// 		status   int
-	// 	}
-
-	// 	tests := []test{
-	// 		{
-	// 			id:   "",
-	// 			input:    partialInput,
-	// 			status:   422,
-	// 			expected: `{"errors":{"Email":"required","FirstName":"required","LastName":"required","Password":"required"}}`,
-	// 		},
-	// 		{
-	// 			expect:   "Should return invalid email field error",
-	// 			input:    invalidEmail,
-	// 			status:   422,
-	// 			expected: `{"errors":{"Email":"email - invalid"}}`,
-	// 		},
-	// 	}
-
-	// 	for _, tc := range tests {
-	// 		b, _ := json.Marshal(tc.input)
-	// 		req := utils.NewRequestWithHeader("POST", "/", bytes.NewReader(b))
-	// 		resp, err := app.Test(req)
-	// 		if err != nil {
-	// 			t.Error(err)
-	// 		}
-
-	// 		t.Run(fmt.Sprintf("should return %d status code", tc.status), func(t *testing.T) {
-	// 			if resp.StatusCode != tc.status {
-	// 				t.Errorf("expected status code %d but return %d", tc.status, resp.StatusCode)
-	// 			}
-	// 		})
-
-	// 		t.Run(tc.expect, func(t *testing.T) {
-	// 			body := make([]byte, resp.ContentLength)
-	// 			resp.Body.Read(body)
-
-	// 			if string(body) != tc.expected {
-	// 				t.Log(string(body))
-	// 				t.Errorf("doesn't matched with the expected error")
-	// 			}
-	// 		})
-	// 	}
-	// })
 }

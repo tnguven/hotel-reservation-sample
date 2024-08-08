@@ -1,7 +1,7 @@
 package handler
 
 type getUserRequest struct {
-	ID string `validate:"required,objectId"`
+	ID string `validate:"required,id"`
 }
 
 func (r *getUserRequest) bind(v *Validator) error {
@@ -28,7 +28,7 @@ func (r *insertUserRequest) bind(v *Validator) error {
 }
 
 type updateUserRequest struct {
-	ID        string `validate:"required,objectId"`
+	ID        string `validate:"required,id"`
 	FirstName string `validate:"omitempty,alpha,min=2,max=48"`
 	LastName  string `validate:"omitempty,alpha,min=2,max=48"`
 	Email     string `validate:"omitempty,email"`
