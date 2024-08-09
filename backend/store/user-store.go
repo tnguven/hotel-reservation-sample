@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/tnguven/hotel-reservation-app/types"
@@ -94,9 +95,16 @@ func (ms *MongoUserStore) PutUser(ctx context.Context, params *types.UpdateUserP
 		return err
 	}
 
-	ms.coll.UpdateOne(ctx, bson.M{"_id": oid}, bson.D{{
+	result, err := ms.coll.UpdateOne(ctx, bson.M{"_id": oid}, bson.D{{
 		Key: "$set", Value: params.ToBsonMap(),
 	}})
+	if err != nil {
+		return err
+	}
+
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("no user found with id %s", id)
+	}
 
 	return nil
 }

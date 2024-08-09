@@ -12,6 +12,7 @@ import (
 	"github.com/tnguven/hotel-reservation-app/store"
 	"github.com/tnguven/hotel-reservation-app/types"
 	"github.com/tnguven/hotel-reservation-app/utils"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -140,12 +141,14 @@ func TestPostUser(t *testing.T) {
 			}
 
 			t.Run(fmt.Sprintf("should return %d status code", tc.status), func(t *testing.T) {
+				t.Parallel()
 				if resp.StatusCode != tc.status {
 					t.Errorf("expected status code %d but return %d", tc.status, resp.StatusCode)
 				}
 			})
 
 			t.Run(tc.expect, func(t *testing.T) {
+				t.Parallel()
 				body := make([]byte, resp.ContentLength)
 				resp.Body.Read(body)
 
@@ -255,11 +258,13 @@ func TestHandleGetUser(t *testing.T) {
 			}
 
 			t.Run(fmt.Sprintf("should return %d status code", tc.status), func(t *testing.T) {
+				t.Parallel()
 				if resp.StatusCode != tc.status {
 					t.Errorf("expected status code %d but return %d", tc.status, resp.StatusCode)
 				}
 			})
 			t.Run(tc.expect, func(t *testing.T) {
+				t.Parallel()
 				body := make([]byte, resp.ContentLength)
 				resp.Body.Read(body)
 
@@ -315,10 +320,11 @@ func TestHandlePutUser(t *testing.T) {
 		t.Error(err)
 	}
 
+	objectId := result.InsertedIDs[0].(primitive.ObjectID)
+
 	app.Put("/:id", handlers.HandlePutUser)
 
-	t.Run("Validations put user with userId is ObjectId", func(t *testing.T) {
-		objectId := result.InsertedIDs[0].(primitive.ObjectID)
+	t.Run("Validations put user with userId", func(t *testing.T) {
 		invalidMinFields := types.UpdateUserParams{
 			FirstName: "T",
 			LastName:  "F",
@@ -384,12 +390,14 @@ func TestHandlePutUser(t *testing.T) {
 			}
 
 			t.Run(fmt.Sprintf("should return %d status code", tc.status), func(t *testing.T) {
+				t.Parallel()
 				if resp.StatusCode != tc.status {
 					t.Errorf("expected status code %d but return %d", tc.status, resp.StatusCode)
 				}
 			})
 
 			t.Run(tc.expect, func(t *testing.T) {
+				t.Parallel()
 				body := make([]byte, resp.ContentLength)
 				resp.Body.Read(body)
 
@@ -397,6 +405,70 @@ func TestHandlePutUser(t *testing.T) {
 					t.Errorf("should return %s but received %s", tc.expected, string(body))
 				}
 			})
+		}
+	})
+
+	t.Run("update user", func(t *testing.T) {
+		params := types.UpdateUserParams{
+			FirstName: "AAB",
+			LastName:  "Bar",
+		}
+
+		b, _ := json.Marshal(params)
+		req := utils.NewRequestWithHeader("PUT", fmt.Sprintf("/%s", objectId.Hex()), bytes.NewReader(b))
+		res, err := app.Test(req)
+		if err != nil {
+			t.Log("something went wrong", err)
+			t.Error(err)
+		}
+
+		var response map[string]interface{}
+
+		if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+			t.Error(err)
+		}
+
+		if response["updated"] != objectId.Hex() {
+			t.Errorf("expecting user id %s to be updated, but got %v", objectId.Hex(), response["updated"])
+		}
+
+		var updatedUser types.User
+		if err := coll.FindOne(context.TODO(), bson.M{"_id": objectId}).Decode(&updatedUser); err != nil {
+			t.Error(err)
+		}
+
+		if updatedUser.FirstName != params.FirstName {
+			t.Errorf("does not update the record in mongodb expected %s received %s", params.FirstName, updatedUser.FirstName)
+		}
+	})
+
+	t.Run("return error if the id does not exist", func(t *testing.T) {
+		_, err := coll.DeleteMany(context.TODO(), bson.M{}) // delete all docs
+		if err != nil {
+			t.Error(err)
+		}
+		params := types.UpdateUserParams{
+			FirstName: "AAB",
+			LastName:  "Bar",
+		}
+		b, _ := json.Marshal(params)
+
+		req := utils.NewRequestWithHeader("PUT", fmt.Sprintf("/%s", objectId.Hex()), bytes.NewReader(b))
+		res, err := app.Test(req)
+		if err != nil {
+			t.Error(err)
+		}
+
+		var response map[string]interface{}
+
+		if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+			t.Error(err)
+		}
+
+		expectedError := fmt.Sprintf("no user found with id %s", objectId.Hex())
+
+		if response["error"] != expectedError {
+			t.Errorf("expecting error %s but received %s", expectedError, response["error"])
 		}
 	})
 }

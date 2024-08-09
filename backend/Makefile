@@ -11,3 +11,6 @@ test:
 
 test-only:
 	@go test -v ./... --run "$1" -count=1
+
+seed:
+	@go run ./scripts/seed.go
