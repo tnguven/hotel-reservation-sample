@@ -6,10 +6,11 @@ type RoomType int
 
 const (
 	_ RoomType = iota
-	SingleBedRoomType
-	DoubleBedRoomType
+	FamilyRoomType
+	FamilySuitRoomType
 	SuiteRoomType
-	KingSuiteRoomType
+	HoneyMoonRoomType
+	KingRoomType
 )
 
 type Room struct {

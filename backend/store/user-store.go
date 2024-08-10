@@ -11,6 +11,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+const userCollection = "users"
+
 type UserStore interface {
 	Dropper
 
@@ -29,7 +31,7 @@ type MongoUserStore struct {
 func NewMongoUserStore(db *mongo.Database) *MongoUserStore {
 	return &MongoUserStore{
 		db:   db,
-		coll: db.Collection("users"),
+		coll: db.Collection(userCollection),
 	}
 }
 
@@ -110,6 +112,6 @@ func (ms *MongoUserStore) PutUser(ctx context.Context, params *types.UpdateUserP
 }
 
 func (ms *MongoUserStore) Drop(ctx context.Context) error {
-	log.Println("dropping users collection")
+	log.Printf("dropping %s collection", userCollection)
 	return ms.coll.Drop(ctx)
 }

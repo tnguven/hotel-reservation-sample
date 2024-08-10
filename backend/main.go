@@ -27,7 +27,7 @@ func main() {
 
 	ctx := context.Background()
 
-	database := db.New(ctx, configs)
+	_, database := db.New(ctx, configs)
 
 	withLog := true
 	route := router.New(withLog)
