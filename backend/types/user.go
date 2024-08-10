@@ -56,3 +56,12 @@ func (p UpdateUserParams) ToBsonMap() bson.M {
 
 	return values
 }
+
+type AuthParams struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (param *AuthParams) IsValidPassword(encryptedPassword string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(encryptedPassword), []byte(param.Password)) == nil
+}

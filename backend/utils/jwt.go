@@ -1,20 +1,25 @@
 package utils
 
 import (
+	"os"
 	"time"
 
 	jwtware "github.com/gofiber/contrib/jwt"
+	"github.com/gofiber/fiber/v2/log"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var secretString = []byte("!!6359488b56d1e4196a1705f472347dd70964d8536c5e9f48e690a9eacd7b7a58!!")
+var secretString = []byte(os.Getenv("JWT_SECRET"))
 var JWTSecret = jwtware.SigningKey{Key: secretString}
 
-func GenerateJWT(id uint) string {
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["id"] = id
-	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
-	t, _ := token.SignedString(secretString)
+func GenerateJWT(id string) string {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":  id,
+		"exp": time.Now().Add(time.Hour * 72).Unix(),
+	})
+	t, err := token.SignedString(secretString)
+	if err != nil {
+		log.Error("failed to sign token with secret")
+	}
 	return t
 }

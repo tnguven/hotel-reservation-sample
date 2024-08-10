@@ -43,12 +43,32 @@ func (r *updateUserRequest) bind(v *Validator) error {
 	return nil
 }
 
+type getHotelRequest struct {
+	HotelID string `validate:"required,id"`
+}
+
+func (r *getHotelRequest) bind(v *Validator) error {
+	if err := v.Validate(r); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type hotelQueryRequest struct {
 	Rooms  bool `validate:"rooms"`
 	Rating bool `validate:"numeric"`
 }
 
-type HotelQueryParams struct {
-	Rooms  bool
-	Rating int
+type authRequest struct {
+	Email    string `validate:"required,email"`
+	Password string `validate:"required,min=7,max=256"`
+}
+
+func (r *authRequest) bind(v *Validator) error {
+	if err := v.Validate(r); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -14,8 +14,7 @@ func (h *Handler) HandleGetUser(c *fiber.Ctx) error {
 	req := getUserRequest{
 		ID: id,
 	}
-	err := req.bind(h.validator)
-	if err != nil {
+	if err := req.bind(h.validator); err != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(utils.NewValidatorError(err))
 	}
 
@@ -56,8 +55,7 @@ func (h *Handler) HandlePostUser(c *fiber.Ctx) error {
 		Email:     params.Email,
 		Password:  params.Password,
 	}
-	err := req.bind(h.validator)
-	if err != nil {
+	if err := req.bind(h.validator); err != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(utils.NewValidatorError(err))
 	}
 
@@ -82,8 +80,7 @@ func (h *Handler) HandleDeleteUser(c *fiber.Ctx) error {
 	req := getUserRequest{
 		ID: id,
 	}
-	err := req.bind(h.validator)
-	if err != nil {
+	if err := req.bind(h.validator); err != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(utils.NewValidatorError(err))
 	}
 
@@ -109,8 +106,7 @@ func (h *Handler) HandlePutUser(c *fiber.Ctx) error {
 		FirstName: params.FirstName,
 		LastName:  params.LastName,
 	}
-	err := req.bind(h.validator)
-	if err != nil {
+	if err := req.bind(h.validator); err != nil {
 		return c.Status(fiber.StatusUnprocessableEntity).JSON(utils.NewValidatorError(err))
 	}
 

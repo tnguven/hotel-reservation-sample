@@ -7,7 +7,7 @@ import (
 	"github.com/tnguven/hotel-reservation-app/config"
 	"github.com/tnguven/hotel-reservation-app/db"
 	"github.com/tnguven/hotel-reservation-app/handler"
-	"github.com/tnguven/hotel-reservation-app/router"
+	"github.com/tnguven/hotel-reservation-app/server"
 	"github.com/tnguven/hotel-reservation-app/store"
 )
 
@@ -30,7 +30,7 @@ func main() {
 	database := db.New(ctx, configs)
 
 	withLog := true
-	route := router.New(withLog)
+	route := server.New(withLog)
 
 	var (
 		userStore  = store.NewMongoUserStore(database)

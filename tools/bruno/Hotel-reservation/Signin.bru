@@ -1,0 +1,24 @@
+meta {
+  name: Signin
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:5000/v1/auth/signin
+  body: json
+  auth: none
+}
+
+headers {
+  Content-type: application/json
+}
+
+body:json {
+  {
+    "firstName": "Foo",
+    "lastName": "Bar",
+    "email": "test2@test.com",
+    "password": "secret1234"
+  }
+}
