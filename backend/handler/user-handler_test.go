@@ -25,6 +25,8 @@ const (
 
 type testDb struct {
 	store.UserStore
+	store.HotelStore
+	store.RoomStore
 }
 
 func (tdb *testDb) tearDown(t *testing.T) {
@@ -37,12 +39,17 @@ func setup() (*testDb, *mongo.Collection, *fiber.App, *Handler) {
 	db := utils.NewDb()
 	coll := db.Collection(collection)
 
+	hotelStore := store.NewMongoHotelStore(db)
+	roomStore := store.NewMongoRoomStore(db, hotelStore)
+
 	tdb := &testDb{
-		UserStore: store.NewMongoUserStore(db),
+		UserStore:  store.NewMongoUserStore(db),
+		HotelStore: hotelStore,
+		RoomStore:  roomStore,
 	}
 
 	app := router.New(withLog)
-	handlers := NewHandler(tdb.UserStore)
+	handlers := NewHandler(tdb.UserStore, tdb.HotelStore, tdb.RoomStore)
 
 	return tdb, coll, app, handlers
 }

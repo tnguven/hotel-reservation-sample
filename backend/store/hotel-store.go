@@ -18,6 +18,7 @@ type HotelStore interface {
 
 	InsertHotel(context.Context, *types.Hotel) (*types.Hotel, error)
 	PutHotel(context.Context, *types.UpdateHotelParams, *primitive.ObjectID) error
+	GetHotels(context.Context) ([]*types.Hotel, error)
 }
 
 type MongoHotelStore struct {
@@ -30,6 +31,20 @@ func NewMongoHotelStore(db *mongo.Database) *MongoHotelStore {
 		db:   db,
 		coll: db.Collection(hotelCollection),
 	}
+}
+
+func (ms *MongoHotelStore) GetHotels(ctx context.Context) ([]*types.Hotel, error) {
+	cur, err := ms.coll.Find(ctx, bson.M{}) // TODO add limit
+	if err != nil {
+		return nil, err
+	}
+
+	var hotels []*types.Hotel
+	if err := cur.All(ctx, &hotels); err != nil {
+		return nil, err
+	}
+
+	return hotels, nil
 }
 
 func (ms *MongoHotelStore) InsertHotel(ctx context.Context, hotel *types.Hotel) (*types.Hotel, error) {

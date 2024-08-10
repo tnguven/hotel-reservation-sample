@@ -9,12 +9,16 @@ func (handler *Handler) Register(app *fiber.App) {
 	v1 := app.Group("/v1")
 	v1.Get("/ping", handler.HandlerPing)
 
-	publicUser := v1.Group("/users")
-	publicUser.Get("/", handler.HandleGetUsers)
-	publicUser.Get("/:id", handler.HandleGetUser)
-	publicUser.Put("/:id", handler.HandlePutUser)
-	publicUser.Delete("/:id", handler.HandleDeleteUser)
-	publicUser.Post("/", handler.HandlePostUser)
+	users := v1.Group("/users")
+	users.Get("/", handler.HandleGetUsers)
+	users.Get("/:id", handler.HandleGetUser)
+	users.Put("/:id", handler.HandlePutUser)
+	users.Delete("/:id", handler.HandleDeleteUser)
+	users.Post("/", handler.HandlePostUser)
+
+	hotels := v1.Group("/hotels")
+	hotels.Get("/", handler.HandleGetHotels)
+	hotels.Get("/:hotelID/rooms", handler.HandleGetRooms)
 
 	// jwtMiddleware := jwtware.New(
 	// 	jwtware.Config{

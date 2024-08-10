@@ -42,3 +42,13 @@ func (r *updateUserRequest) bind(v *Validator) error {
 
 	return nil
 }
+
+type hotelQueryRequest struct {
+	Rooms  bool `validate:"rooms"`
+	Rating bool `validate:"numeric"`
+}
+
+type HotelQueryParams struct {
+	Rooms  bool
+	Rating int
+}

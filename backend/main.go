@@ -27,14 +27,22 @@ func main() {
 
 	ctx := context.Background()
 
-	_, database := db.New(ctx, configs)
+	database := db.New(ctx, configs)
 
 	withLog := true
 	route := router.New(withLog)
 
-	userStore := store.NewMongoUserStore(database)
+	var (
+		userStore  = store.NewMongoUserStore(database)
+		hotelStore = store.NewMongoHotelStore(database)
+		roomStore  = store.NewMongoRoomStore(database, hotelStore) // TODO refactor this shenanigan
+	)
 
-	handlers := handler.NewHandler(userStore)
+	handlers := handler.NewHandler(&store.Stores{
+		Hotel: hotelStore,
+		Room:  roomStore,
+		User:  userStore,
+	})
 
 	handlers.Register(route)
 

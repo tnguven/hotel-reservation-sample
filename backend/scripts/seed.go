@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"math/rand"
+	"time"
 
 	"github.com/tnguven/hotel-reservation-app/config"
 	"github.com/tnguven/hotel-reservation-app/db"
@@ -66,6 +67,7 @@ func seedHotel(hotelName string, location string) {
 		Name:     hotelName,
 		Location: location,
 		Rooms:    []primitive.ObjectID{},
+		Rating:   randIntGenerator(1, 10),
 	}
 
 	insertedHotel, err := hotelStore.InsertHotel(ctx, &hotel)
@@ -80,12 +82,12 @@ func seedHotel(hotelName string, location string) {
 			HotelID:   insertedHotel.ID,
 		},
 		{
-			Type:      types.FamilySuitRoomType,
+			Type:      types.SuiteRoomType,
 			BasePrice: randomFloatGenerator(200.99, 250.99),
 			HotelID:   insertedHotel.ID,
 		},
 		{
-			Type:      types.SuiteRoomType,
+			Type:      types.FamilySuitRoomType,
 			BasePrice: randomFloatGenerator(250.99, 300.99),
 			HotelID:   insertedHotel.ID,
 		},
@@ -113,4 +115,9 @@ func seedHotel(hotelName string, location string) {
 func randomFloatGenerator(min float64, max float64) float64 {
 	randFloat := rand.Float64()*(max-min) + min
 	return math.Trunc(randFloat*100) / 100 // right padding 2
+}
+
+func randIntGenerator(min int, max int) int {
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return rng.Intn(max-min+1) + min
 }

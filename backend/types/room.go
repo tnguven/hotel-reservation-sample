@@ -2,15 +2,14 @@ package types
 
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
-type RoomType int
+type RoomType string
 
 const (
-	_ RoomType = iota
-	FamilyRoomType
-	FamilySuitRoomType
-	SuiteRoomType
-	HoneyMoonRoomType
-	KingRoomType
+	FamilyRoomType     RoomType = "family"
+	FamilySuitRoomType RoomType = "family suit"
+	SuiteRoomType      RoomType = "suit"
+	HoneyMoonRoomType  RoomType = "honey moon"
+	KingRoomType       RoomType = "king"
 )
 
 type Room struct {
