@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -9,42 +10,43 @@ import (
 )
 
 func JWTAuthentication(c *fiber.Ctx) error {
-	fmt.Println("----- JWT  AUTH ----------------")
-
 	token, ok := c.GetReqHeaders()["X-Api-Token"]
 	if !ok {
 		return fmt.Errorf("unauthorized")
 	}
 
-	fmt.Println("DOGRU MU BU LAN", token[0])
-	if err := parseToken(token[0]); err != nil {
-		return err
+	fmt.Println("TOKEN FIRST ITEM", token[0])
+	claims, err := validateToken(token[0])
+	if err != nil {
+		return fmt.Errorf("token is invalid")
 	}
 
-	fmt.Println("Token: ", token)
+	ctx := context.WithValue(c.Context(), "userID", claims["id"])
+	c.SetUserContext(ctx)
 
-	return nil
+	fmt.Println("Token: ", claims)
+
+	return c.Next()
 }
 
-func parseToken(tokenStr string) error {
+func validateToken(tokenStr string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			fmt.Println("invalid signing method", t.Header["alg"])
 			return nil, fmt.Errorf("unauthorized")
 		}
-
 		secret := os.Getenv("JWT_SECRET")
 		return []byte(secret), nil
 	})
-
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		fmt.Println(claims)
-		return nil
+	claims, ok := token.Claims.(jwt.MapClaims)
+
+	if !ok {
+		return nil, fmt.Errorf("unauthorize")
 	}
 
-	return fmt.Errorf("unauthorize")
+	return claims, nil
 }

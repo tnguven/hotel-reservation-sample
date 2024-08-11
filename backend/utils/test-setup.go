@@ -19,8 +19,19 @@ func NewDb() *mongo.Database {
 		WithDbName("test"))
 }
 
-func NewRequestWithHeader(method, target string, body io.Reader) *http.Request {
-	req := httptest.NewRequest(method, target, body)
-	req.Header.Add("Content-Type", "application/json")
-	return req
+type TestRequest struct {
+	Method  string
+	Target  string
+	Payload io.Reader
+	Token   string
+}
+
+func (t *TestRequest) NewRequestWithHeader() *http.Request {
+	request := httptest.NewRequest(t.Method, t.Target, t.Payload)
+	request.Header.Add("Content-Type", "application/json")
+	if t.Token != "" {
+		request.Header.Add("X-api-token", t.Token)
+	}
+
+	return request
 }

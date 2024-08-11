@@ -10,11 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type AuthResponse struct {
-	User  *types.User `json:"user"`
-	Token string      `json:"token"`
-}
-
 func (h *Handler) HandleAuthenticate(c *fiber.Ctx) error {
 	var authParams types.AuthParams
 	if err := c.BodyParser(&authParams); err != nil {

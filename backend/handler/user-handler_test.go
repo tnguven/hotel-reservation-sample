@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/tnguven/hotel-reservation-app/router"
+	"github.com/tnguven/hotel-reservation-app/server"
 	"github.com/tnguven/hotel-reservation-app/store"
 	"github.com/tnguven/hotel-reservation-app/types"
 	"github.com/tnguven/hotel-reservation-app/utils"
@@ -23,39 +23,40 @@ const (
 	invalidMaxCharName = "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"
 )
 
-type testDb struct {
-	store.UserStore
-	store.HotelStore
-	store.RoomStore
+type TestDb struct {
+	store.Stores
 }
 
-func (tdb *testDb) tearDown(t *testing.T) {
-	if err := tdb.UserStore.Drop(context.TODO()); err != nil {
+func (tdb *TestDb) tearDown(t *testing.T) {
+	if err := tdb.User.Drop(context.TODO()); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func setup() (*testDb, *mongo.Collection, *fiber.App, *Handler) {
+func Setup() (*TestDb, *mongo.Collection, *fiber.App, *Handler) {
 	db := utils.NewDb()
 	coll := db.Collection(collection)
 
 	hotelStore := store.NewMongoHotelStore(db)
 	roomStore := store.NewMongoRoomStore(db, hotelStore)
 
-	tdb := &testDb{
-		UserStore:  store.NewMongoUserStore(db),
-		HotelStore: hotelStore,
-		RoomStore:  roomStore,
+	stores := store.Stores{
+		User:  store.NewMongoUserStore(db),
+		Hotel: hotelStore,
+		Room:  roomStore,
+	}
+	tdb := &TestDb{
+		Stores: stores,
 	}
 
-	app := router.New(withLog)
-	handlers := NewHandler(tdb.UserStore, tdb.HotelStore, tdb.RoomStore)
+	app := server.New(withLog)
+	handlers := NewHandler(&stores)
 
 	return tdb, coll, app, handlers
 }
 
 func TestPostUser(t *testing.T) {
-	tdb, _, app, handlers := setup()
+	tdb, _, app, handlers := Setup()
 	defer tdb.tearDown(t)
 
 	app.Post("/", handlers.HandlePostUser)
@@ -141,8 +142,12 @@ func TestPostUser(t *testing.T) {
 
 		for _, tc := range tests {
 			b, _ := json.Marshal(tc.input)
-			req := utils.NewRequestWithHeader("POST", "/", bytes.NewReader(b))
-			resp, err := app.Test(req)
+			testReq := utils.TestRequest{
+				Method:  "POST",
+				Target:  "/",
+				Payload: bytes.NewReader(b),
+			}
+			resp, err := app.Test(testReq.NewRequestWithHeader())
 			if err != nil {
 				t.Error(err)
 			}
@@ -174,9 +179,12 @@ func TestPostUser(t *testing.T) {
 			Password:  "1234567",
 		}
 		b, _ := json.Marshal(params)
-
-		req := utils.NewRequestWithHeader("POST", "/", bytes.NewReader(b))
-		res, err := app.Test(req)
+		testReq := utils.TestRequest{
+			Method:  "POST",
+			Target:  "/",
+			Payload: bytes.NewReader(b),
+		}
+		res, err := app.Test(testReq.NewRequestWithHeader())
 		if err != nil {
 			t.Error(err)
 		}
@@ -209,9 +217,12 @@ func TestPostUser(t *testing.T) {
 			Password:  "1234567",
 		}
 		b, _ := json.Marshal(params)
-
-		req := utils.NewRequestWithHeader("POST", "/", bytes.NewReader(b))
-		res, err := app.Test(req)
+		testReq := utils.TestRequest{
+			Method:  "POST",
+			Target:  "/",
+			Payload: bytes.NewReader(b),
+		}
+		res, err := app.Test(testReq.NewRequestWithHeader())
 		if err != nil {
 			t.Error(err)
 		}
@@ -223,20 +234,11 @@ func TestPostUser(t *testing.T) {
 }
 
 func TestHandleGetUser(t *testing.T) {
-	tdb, coll, app, handlers := setup()
+	tdb, coll, app, handlers := Setup()
 	defer tdb.tearDown(t)
 
-	newUsers := []interface{}{
-		types.User{FirstName: "AA", LastName: "AA", Email: "aa@test.com", EncryptedPassword: "encrypted"},
-		types.User{FirstName: "BB", LastName: "BB", Email: "bb@test.com", EncryptedPassword: "encrypted"},
-	}
-
+	newUsers, objectId := insertUsers(t, coll)
 	fixtureUser, _ := newUsers[0].(types.User)
-
-	result, err := coll.InsertMany(context.TODO(), newUsers)
-	if err != nil {
-		t.Error(err)
-	}
 
 	app.Get("/:id", handlers.HandleGetUser)
 
@@ -258,8 +260,11 @@ func TestHandleGetUser(t *testing.T) {
 		}
 
 		for _, tc := range tests {
-			req := utils.NewRequestWithHeader("GET", fmt.Sprintf("/%s", tc.id), nil)
-			resp, err := app.Test(req)
+			testReq := utils.TestRequest{
+				Method: "GET",
+				Target: fmt.Sprintf("/%s", tc.id),
+			}
+			resp, err := app.Test(testReq.NewRequestWithHeader())
 			if err != nil {
 				t.Error(err)
 			}
@@ -283,9 +288,11 @@ func TestHandleGetUser(t *testing.T) {
 	})
 
 	t.Run("get user by ID", func(t *testing.T) {
-		objectId := result.InsertedIDs[0].(primitive.ObjectID)
-		req := utils.NewRequestWithHeader("GET", fmt.Sprintf("/%s", objectId.Hex()), nil)
-		res, err := app.Test(req)
+		testReq := utils.TestRequest{
+			Method: "GET",
+			Target: fmt.Sprintf("/%s", objectId.Hex()),
+		}
+		res, err := app.Test(testReq.NewRequestWithHeader())
 		if err != nil {
 			t.Error(err)
 		}
@@ -312,22 +319,10 @@ func TestHandleGetUser(t *testing.T) {
 }
 
 func TestHandlePutUser(t *testing.T) {
-	tdb, coll, app, handlers := setup()
+	tdb, coll, app, handlers := Setup()
 	defer tdb.tearDown(t)
 
-	newUsers := []interface{}{
-		types.User{FirstName: "AA", LastName: "AA", Email: "aa@test.com", EncryptedPassword: "encrypted"},
-		types.User{FirstName: "BB", LastName: "BB", Email: "bb@test.com", EncryptedPassword: "encrypted"},
-	}
-
-	// fixtureUser, _ := newUsers[0].(types.User)
-
-	result, err := coll.InsertMany(context.TODO(), newUsers)
-	if err != nil {
-		t.Error(err)
-	}
-
-	objectId := result.InsertedIDs[0].(primitive.ObjectID)
+	_, objectId := insertUsers(t, coll)
 
 	app.Put("/:id", handlers.HandlePutUser)
 
@@ -390,8 +385,12 @@ func TestHandlePutUser(t *testing.T) {
 
 		for _, tc := range tests {
 			b, _ := json.Marshal(tc.input)
-			req := utils.NewRequestWithHeader("PUT", fmt.Sprintf("/%s", tc.id), bytes.NewReader(b))
-			resp, err := app.Test(req)
+			testReq := utils.TestRequest{
+				Method:  "PUT",
+				Target:  fmt.Sprintf("/%s", tc.id),
+				Payload: bytes.NewReader(b),
+			}
+			resp, err := app.Test(testReq.NewRequestWithHeader())
 			if err != nil {
 				t.Error(err)
 			}
@@ -422,8 +421,12 @@ func TestHandlePutUser(t *testing.T) {
 		}
 
 		b, _ := json.Marshal(params)
-		req := utils.NewRequestWithHeader("PUT", fmt.Sprintf("/%s", objectId.Hex()), bytes.NewReader(b))
-		res, err := app.Test(req)
+		testReq := utils.TestRequest{
+			Method:  "PUT",
+			Target:  fmt.Sprintf("/%s", objectId.Hex()),
+			Payload: bytes.NewReader(b),
+		}
+		res, err := app.Test(testReq.NewRequestWithHeader())
 		if err != nil {
 			t.Log("something went wrong", err)
 			t.Error(err)
@@ -460,8 +463,12 @@ func TestHandlePutUser(t *testing.T) {
 		}
 		b, _ := json.Marshal(params)
 
-		req := utils.NewRequestWithHeader("PUT", fmt.Sprintf("/%s", objectId.Hex()), bytes.NewReader(b))
-		res, err := app.Test(req)
+		testReq := utils.TestRequest{
+			Method:  "PUT",
+			Target:  fmt.Sprintf("/%s", objectId.Hex()),
+			Payload: bytes.NewReader(b),
+		}
+		res, err := app.Test(testReq.NewRequestWithHeader())
 		if err != nil {
 			t.Error(err)
 		}
@@ -478,4 +485,18 @@ func TestHandlePutUser(t *testing.T) {
 			t.Errorf("expecting error %s but received %s", expectedError, response["error"])
 		}
 	})
+}
+
+func insertUsers(t *testing.T, coll *mongo.Collection) ([]interface{}, primitive.ObjectID) {
+	newUsers := []interface{}{
+		types.User{FirstName: "AA", LastName: "AA", Email: "aa@test.com", EncryptedPassword: "encrypted"},
+		types.User{FirstName: "BB", LastName: "BB", Email: "bb@test.com", EncryptedPassword: "encrypted"},
+	}
+
+	res, err := coll.InsertMany(context.TODO(), newUsers)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return newUsers, res.InsertedIDs[0].(primitive.ObjectID)
 }
