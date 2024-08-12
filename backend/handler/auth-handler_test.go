@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
@@ -12,9 +13,9 @@ import (
 	"github.com/tnguven/hotel-reservation-app/utils"
 )
 
-func insertTestUser(t *testing.T, userStore store.UserStore) *types.CreateUserParams {
+func insertTestUser(t *testing.T, userStore store.UserStore) *types.User {
 	userParam := types.CreateUserParams{
-		Email:     "Test",
+		Email:     "test@test.com",
 		FirstName: "FirstName",
 		LastName:  "LastName",
 		Password:  "secret1234",
@@ -28,43 +29,93 @@ func insertTestUser(t *testing.T, userStore store.UserStore) *types.CreateUserPa
 		t.Fatal(err)
 	}
 
-	return &userParam
+	return user
 }
 
 func TestHandleAuthenticate(t *testing.T) {
-	tdb, _, app, handlers := Setup()
+	t.Parallel()
+
+	tdb, _, app, handlers, _ := Setup()
 	defer tdb.tearDown(t)
 
 	insertedUser := insertTestUser(t, tdb.User)
 
 	app.Post("/", handlers.HandleAuthenticate)
 
-	t.Run("happy path", func(t *testing.T) {
-		params := types.AuthParams{
-			Email:    insertedUser.Email,
-			Password: insertedUser.Password,
-		}
-		b, _ := json.Marshal(params)
-		testReq := utils.TestRequest{
-			Method:  "POST",
-			Target:  "/",
-			Payload: bytes.NewReader(b),
-		}
-		req := testReq.NewRequestWithHeader()
-		resp, err := app.Test(req)
-		if err != nil {
-			t.Fatal(err)
-		}
+	params := types.AuthParams{
+		Email:    "test@test.com",
+		Password: "secret1234",
+	}
+	b, _ := json.Marshal(params)
+	testReq := utils.TestRequest{
+		Method:  "POST",
+		Target:  "/",
+		Payload: bytes.NewReader(b),
+	}
+	req := testReq.NewRequestWithHeader()
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		if resp.StatusCode != fiber.StatusOK {
-			t.Fatal("expected http status of 200 but got %s", resp.StatusCode)
-		}
+	if resp.StatusCode != fiber.StatusOK {
+		t.Fatalf("expected http status of 200 but got %d", resp.StatusCode)
+	}
 
-		var result AuthResponse
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			t.Error(err)
-		}
+	var result AuthResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatal(err)
+	}
+	if result.Token == "" {
+		t.Fatal("expected the JWT token to be present in the auth response")
+	}
+	// set the encrypted password to an empty string, because we do not return that in any
+	// JSON response
+	insertedUser.EncryptedPassword = ""
+	if !reflect.DeepEqual(insertedUser, result.User) {
+		t.Fatal("expected the user to be the inserted user")
+	}
+}
 
-	})
+func TestHandleAuthenticateFailure(t *testing.T) {
+	t.Parallel()
+
+	tdb, _, app, handlers, _ := Setup()
+	defer tdb.tearDown(t)
+
+	app.Post("/", handlers.HandleAuthenticate)
+
+	params := types.AuthParams{
+		Email:    "test@test.com",
+		Password: "wrong",
+	}
+	b, _ := json.Marshal(params)
+	testReq := utils.TestRequest{
+		Method:  "POST",
+		Target:  "/",
+		Payload: bytes.NewReader(b),
+	}
+	req := testReq.NewRequestWithHeader()
+	resp, err := app.Test(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if resp.StatusCode != fiber.StatusBadRequest {
+		t.Fatalf("expected http status of 400 but got %d", resp.StatusCode)
+	}
+
+	var result genericResp
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatal(err)
+	}
+
+	if result.Type != "error" {
+		t.Fatalf("expected to get type error but received: %s", result.Type)
+	}
+
+	if result.Msg != "invalid credential" {
+		t.Fatalf("expected to get msg invalid credential but received: %s", result.Msg)
+	}
 
 }

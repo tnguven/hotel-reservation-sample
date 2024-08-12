@@ -5,7 +5,6 @@ import (
 )
 
 type Handler struct {
-	// validator  *Validator
 	userStore  store.UserStore
 	hotelStore store.HotelStore
 	roomStore  store.RoomStore

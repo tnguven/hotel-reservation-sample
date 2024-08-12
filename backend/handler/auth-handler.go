@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/tnguven/hotel-reservation-app/types"
@@ -10,30 +9,34 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+type genericResp struct {
+	Type string `json:"type"`
+	Msg  string `json:"msg"`
+}
+
+func invalidCredResp(c *fiber.Ctx) error {
+	return c.Status(fiber.StatusBadRequest).JSON(genericResp{
+		Type: "error",
+		Msg:  "invalid credential",
+	})
+}
+
 func (h *Handler) HandleAuthenticate(c *fiber.Ctx) error {
 	var authParams types.AuthParams
 	if err := c.BodyParser(&authParams); err != nil {
 		return err
 	}
 
-	// req := authRequest{
-	// 	Email:    authParams.Email,
-	// 	Password: authParams.Password,
-	// }
-	// if err := req.bind(h.validator); err != nil {
-	// 	return err
-	// }
-
 	user, err := h.userStore.GetUserByEmail(c.Context(), authParams.Email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return fmt.Errorf("invalid credential")
+			return invalidCredResp(c)
 		}
 		return err
 	}
 
 	if !authParams.IsValidPassword(user.EncryptedPassword) {
-		return fmt.Errorf("invalid credentials")
+		return invalidCredResp(c)
 	}
 
 	token := utils.GenerateJWT(user.ID.Hex())
@@ -42,7 +45,6 @@ func (h *Handler) HandleAuthenticate(c *fiber.Ctx) error {
 		User:  user,
 		Token: token,
 	})
-	// return c.Status(fiber.StatusFound).JSON(user)
 }
 
 func (h *Handler) HandleSignIn(c *fiber.Ctx) error {
@@ -50,16 +52,6 @@ func (h *Handler) HandleSignIn(c *fiber.Ctx) error {
 	if err := c.BodyParser(&params); err != nil {
 		return err
 	}
-
-	// req := insertUserRequest{
-	// 	FirstName: params.FirstName,
-	// 	LastName:  params.LastName,
-	// 	Email:     params.Email,
-	// 	Password:  params.Password,
-	// }
-	// if err := req.bind(h.validator); err != nil {
-	// 	return c.Status(fiber.StatusUnprocessableEntity).JSON(utils.NewValidatorError(err))
-	// }
 
 	user, err := types.NewUserFromParams(params)
 	if err != nil {

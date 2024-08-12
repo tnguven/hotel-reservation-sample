@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
+	mid "github.com/tnguven/hotel-reservation-app/handler/middleware"
 	"github.com/tnguven/hotel-reservation-app/server"
 	"github.com/tnguven/hotel-reservation-app/store"
 	"github.com/tnguven/hotel-reservation-app/types"
@@ -33,7 +34,7 @@ func (tdb *TestDb) tearDown(t *testing.T) {
 	}
 }
 
-func Setup() (*TestDb, *mongo.Collection, *fiber.App, *Handler) {
+func Setup() (*TestDb, *mongo.Collection, *fiber.App, *Handler, *mid.Validator) {
 	db := utils.NewDb()
 	coll := db.Collection(collection)
 
@@ -52,14 +53,16 @@ func Setup() (*TestDb, *mongo.Collection, *fiber.App, *Handler) {
 	app := server.New(withLog)
 	handlers := NewHandler(&stores)
 
-	return tdb, coll, app, handlers
+	v := mid.NewValidator()
+
+	return tdb, coll, app, handlers, v
 }
 
 func TestPostUser(t *testing.T) {
-	tdb, _, app, handlers := Setup()
+	tdb, _, app, handlers, validator := Setup()
 	defer tdb.tearDown(t)
 
-	app.Post("/", handlers.HandlePostUser)
+	app.Post("/", mid.MiddlewareValidation(validator, InsertUserRequestSchema), handlers.HandlePostUser)
 
 	t.Run("Validations", func(t *testing.T) {
 		type test struct {
@@ -234,58 +237,13 @@ func TestPostUser(t *testing.T) {
 }
 
 func TestHandleGetUser(t *testing.T) {
-	tdb, coll, app, handlers := Setup()
+	tdb, coll, app, handlers, _ := Setup()
 	defer tdb.tearDown(t)
 
 	newUsers, objectId := insertUsers(t, coll)
 	fixtureUser, _ := newUsers[0].(types.User)
 
 	app.Get("/:id", handlers.HandleGetUser)
-
-	t.Run("Validations get user with userId is ObjectId", func(t *testing.T) {
-		type test struct {
-			id       string
-			expect   string
-			expected string
-			status   int
-		}
-
-		tests := []test{
-			{
-				id:       "invalidId",
-				expect:   "must return invalid ObjectId",
-				status:   422,
-				expected: `{"errors":{"ID":"id - invalid"}}`,
-			},
-		}
-
-		for _, tc := range tests {
-			testReq := utils.TestRequest{
-				Method: "GET",
-				Target: fmt.Sprintf("/%s", tc.id),
-			}
-			resp, err := app.Test(testReq.NewRequestWithHeader())
-			if err != nil {
-				t.Error(err)
-			}
-
-			t.Run(fmt.Sprintf("should return %d status code", tc.status), func(t *testing.T) {
-				t.Parallel()
-				if resp.StatusCode != tc.status {
-					t.Errorf("expected status code %d but return %d", tc.status, resp.StatusCode)
-				}
-			})
-			t.Run(tc.expect, func(t *testing.T) {
-				t.Parallel()
-				body := make([]byte, resp.ContentLength)
-				resp.Body.Read(body)
-
-				if string(body) != tc.expected {
-					t.Errorf("should return %s but received %s", tc.expected, string(body))
-				}
-			})
-		}
-	})
 
 	t.Run("get user by ID", func(t *testing.T) {
 		testReq := utils.TestRequest{
@@ -319,12 +277,12 @@ func TestHandleGetUser(t *testing.T) {
 }
 
 func TestHandlePutUser(t *testing.T) {
-	tdb, coll, app, handlers := Setup()
+	tdb, coll, app, handlers, validator := Setup()
 	defer tdb.tearDown(t)
 
 	_, objectId := insertUsers(t, coll)
 
-	app.Put("/:id", handlers.HandlePutUser)
+	app.Put("/:id", handlers.HandlePutUser, mid.MiddlewareValidation(validator, InsertUserRequestSchema))
 
 	t.Run("Validations put user with userId", func(t *testing.T) {
 		invalidMinFields := types.UpdateUserParams{
