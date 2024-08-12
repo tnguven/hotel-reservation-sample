@@ -1,15 +1,20 @@
 package handler
 
-type getUserRequest struct {
+import (
+	"github.com/gofiber/fiber/v2"
+	"github.com/tnguven/hotel-reservation-app/store"
+	"github.com/tnguven/hotel-reservation-app/types"
+)
+
+type GetUserRequest struct {
 	ID string `validate:"required,id"`
 }
 
-func (r *getUserRequest) bind(v *Validator) error {
-	if err := v.Validate(r); err != nil {
-		return err
-	}
-
-	return nil
+func GetUserRequestSchema(c *fiber.Ctx) (interface{}, error) {
+	id := c.Params("id")
+	return &GetUserRequest{
+		ID: id,
+	}, nil
 }
 
 type insertUserRequest struct {
@@ -19,45 +24,68 @@ type insertUserRequest struct {
 	Password  string `validate:"required,min=7,max=256"`
 }
 
-func (r *insertUserRequest) bind(v *Validator) error {
-	if err := v.Validate(r); err != nil {
-		return err
+func InsertUserRequestSchema(c *fiber.Ctx) (interface{}, error) {
+	var params types.CreateUserParams
+	if err := c.BodyParser(&params); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return &insertUserRequest{
+		FirstName: params.FirstName,
+		LastName:  params.LastName,
+		Email:     params.Email,
+		Password:  params.Password,
+	}, nil
 }
 
 type updateUserRequest struct {
 	ID        string `validate:"required,id"`
 	FirstName string `validate:"omitempty,alpha,min=2,max=48"`
 	LastName  string `validate:"omitempty,alpha,min=2,max=48"`
-	Email     string `validate:"omitempty,email"`
-	Password  string `validate:"omitempty,min=7,max=256"`
 }
 
-func (r *updateUserRequest) bind(v *Validator) error {
-	if err := v.Validate(r); err != nil {
-		return err
-	}
+func UpdateUserRequestSchema(c *fiber.Ctx) (interface{}, error) {
+	var (
+		id     = c.Params("id")
+		params *types.UpdateUserParams
+	)
 
-	return nil
+	if err := c.BodyParser(&params); err != nil {
+		return nil, err
+	}
+	return &updateUserRequest{
+		ID:        id,
+		FirstName: params.FirstName,
+		LastName:  params.LastName,
+	}, nil
 }
 
 type getHotelRequest struct {
 	HotelID string `validate:"required,id"`
 }
 
-func (r *getHotelRequest) bind(v *Validator) error {
-	if err := v.Validate(r); err != nil {
-		return err
-	}
-
-	return nil
+func GetHotelRequestSchema(c *fiber.Ctx) (interface{}, error) {
+	hotelID := c.Params("hotelID")
+	return &getHotelRequest{
+		HotelID: hotelID,
+	}, nil
 }
 
 type hotelQueryRequest struct {
 	Rooms  bool `validate:"rooms"`
-	Rating bool `validate:"numeric"`
+	Rating int  `validate:"numeric"`
+}
+
+func HotelQueryRequestSchema(c *fiber.Ctx) (interface{}, error) {
+	var queryParams store.HotelQueryParams
+	if err := c.QueryParser(&queryParams); err != nil {
+		return nil, err
+	}
+
+	return &hotelQueryRequest{
+		Rooms:  queryParams.Rooms,
+		Rating: queryParams.Rating,
+	}, nil
 }
 
 type authRequest struct {
@@ -65,10 +93,14 @@ type authRequest struct {
 	Password string `validate:"required,min=7,max=256"`
 }
 
-func (r *authRequest) bind(v *Validator) error {
-	if err := v.Validate(r); err != nil {
-		return err
+func AuthRequestSchema(c *fiber.Ctx) (interface{}, error) {
+	var authParams types.AuthParams
+	if err := c.BodyParser(&authParams); err != nil {
+		return nil, err
 	}
 
-	return nil
+	return &authRequest{
+		Email:    authParams.Email,
+		Password: authParams.Password,
+	}, nil
 }

@@ -1,0 +1,16 @@
+meta {
+  name: GetHotels
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:5000/v1/hotels
+  body: none
+  auth: none
+}
+
+headers {
+  Content-type: application/json
+  x-api-token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjM0Njg1NzIsImlkIjoiNjZiN2Y1YTY1YWE2NDBjMWE2ZjI3NTViIn0.tMSHBVbuHRMCYNuU5KyQIFwC6PSpQtRKKwsde-MzyMA
+}

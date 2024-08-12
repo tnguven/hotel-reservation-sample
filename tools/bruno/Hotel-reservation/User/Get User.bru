@@ -1,0 +1,16 @@
+meta {
+  name: Get User
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:5000/v1/users
+  body: none
+  auth: none
+}
+
+headers {
+  x-api-token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjMzOTA5MjEsImlkIjoiNjZiN2Y1YTY1YWE2NDBjMWE2ZjI3NTViIn0.JYKeu-DB28n4I47JLyiVZhvq0xeAFop5TKXseZwTcks
+  Content-type: application/json
+}

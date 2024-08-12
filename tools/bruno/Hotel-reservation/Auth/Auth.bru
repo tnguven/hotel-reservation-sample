@@ -1,11 +1,11 @@
 meta {
-  name: Signin
+  name: Auth
   type: http
-  seq: 3
+  seq: 1
 }
 
 post {
-  url: http://localhost:5000/v1/auth/signin
+  url: http://localhost:5000/v1/auth
   body: json
   auth: none
 }
@@ -16,9 +16,7 @@ headers {
 
 body:json {
   {
-    "firstName": "Foo",
-    "lastName": "Bar",
-    "email": "test2@test.com",
+    "email": "test2test.com",
     "password": "secret1234"
   }
 }

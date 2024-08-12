@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/tnguven/hotel-reservation-app/types"
@@ -11,14 +10,7 @@ import (
 )
 
 func (h *Handler) HandleGetUser(c *fiber.Ctx) error {
-	var id = c.Params("id")
-	req := getUserRequest{
-		ID: id,
-	}
-	if err := req.bind(h.validator); err != nil {
-		return c.Status(fiber.StatusUnprocessableEntity).JSON(utils.NewValidatorError(err))
-	}
-
+	id, _ := c.Locals("userID").(string)
 	user, err := h.userStore.GetByID(c.Context(), id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -31,7 +23,6 @@ func (h *Handler) HandleGetUser(c *fiber.Ctx) error {
 }
 
 func (h *Handler) HandleGetUsers(c *fiber.Ctx) error {
-	fmt.Println(c.UserContext().Value("userID"))
 	users, err := h.userStore.GetUsers(c.Context())
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -46,19 +37,8 @@ func (h *Handler) HandleGetUsers(c *fiber.Ctx) error {
 
 func (h *Handler) HandlePostUser(c *fiber.Ctx) error {
 	var params types.CreateUserParams
-
 	if err := c.BodyParser(&params); err != nil {
 		return err
-	}
-
-	req := insertUserRequest{
-		FirstName: params.FirstName,
-		LastName:  params.LastName,
-		Email:     params.Email,
-		Password:  params.Password,
-	}
-	if err := req.bind(h.validator); err != nil {
-		return c.Status(fiber.StatusUnprocessableEntity).JSON(utils.NewValidatorError(err))
 	}
 
 	user, err := types.NewUserFromParams(params)
@@ -78,13 +58,7 @@ func (h *Handler) HandlePostUser(c *fiber.Ctx) error {
 }
 
 func (h *Handler) HandleDeleteUser(c *fiber.Ctx) error {
-	var id = c.Params("id")
-	req := getUserRequest{
-		ID: id,
-	}
-	if err := req.bind(h.validator); err != nil {
-		return c.Status(fiber.StatusUnprocessableEntity).JSON(utils.NewValidatorError(err))
-	}
+	id, _ := c.Locals("userID").(string)
 
 	if err := h.userStore.DeleteUser(c.Context(), id); err != nil {
 		return err
@@ -95,21 +69,12 @@ func (h *Handler) HandleDeleteUser(c *fiber.Ctx) error {
 
 func (h *Handler) HandlePutUser(c *fiber.Ctx) error {
 	var (
-		id     = c.Params("id")
+		id, _  = c.Locals("userID").(string)
 		params *types.UpdateUserParams
 	)
 
 	if err := c.BodyParser(&params); err != nil {
 		return err
-	}
-
-	req := updateUserRequest{
-		ID:        id,
-		FirstName: params.FirstName,
-		LastName:  params.LastName,
-	}
-	if err := req.bind(h.validator); err != nil {
-		return c.Status(fiber.StatusUnprocessableEntity).JSON(utils.NewValidatorError(err))
 	}
 
 	if err := h.userStore.PutUser(c.Context(), params, id); err != nil {

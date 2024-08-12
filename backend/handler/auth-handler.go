@@ -16,13 +16,13 @@ func (h *Handler) HandleAuthenticate(c *fiber.Ctx) error {
 		return err
 	}
 
-	req := authRequest{
-		Email:    authParams.Email,
-		Password: authParams.Password,
-	}
-	if err := req.bind(h.validator); err != nil {
-		return err
-	}
+	// req := authRequest{
+	// 	Email:    authParams.Email,
+	// 	Password: authParams.Password,
+	// }
+	// if err := req.bind(h.validator); err != nil {
+	// 	return err
+	// }
 
 	user, err := h.userStore.GetUserByEmail(c.Context(), authParams.Email)
 	if err != nil {
@@ -51,15 +51,15 @@ func (h *Handler) HandleSignIn(c *fiber.Ctx) error {
 		return err
 	}
 
-	req := insertUserRequest{
-		FirstName: params.FirstName,
-		LastName:  params.LastName,
-		Email:     params.Email,
-		Password:  params.Password,
-	}
-	if err := req.bind(h.validator); err != nil {
-		return c.Status(fiber.StatusUnprocessableEntity).JSON(utils.NewValidatorError(err))
-	}
+	// req := insertUserRequest{
+	// 	FirstName: params.FirstName,
+	// 	LastName:  params.LastName,
+	// 	Email:     params.Email,
+	// 	Password:  params.Password,
+	// }
+	// if err := req.bind(h.validator); err != nil {
+	// 	return c.Status(fiber.StatusUnprocessableEntity).JSON(utils.NewValidatorError(err))
+	// }
 
 	user, err := types.NewUserFromParams(params)
 	if err != nil {

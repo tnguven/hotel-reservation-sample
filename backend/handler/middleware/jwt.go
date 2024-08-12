@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -15,16 +14,12 @@ func JWTAuthentication(c *fiber.Ctx) error {
 		return fmt.Errorf("unauthorized")
 	}
 
-	fmt.Println("TOKEN FIRST ITEM", token[0])
 	claims, err := validateToken(token[0])
 	if err != nil {
 		return fmt.Errorf("token is invalid")
 	}
 
-	ctx := context.WithValue(c.Context(), "userID", claims["id"])
-	c.SetUserContext(ctx)
-
-	fmt.Println("Token: ", claims)
+	c.Locals("userID", claims["id"])
 
 	return c.Next()
 }

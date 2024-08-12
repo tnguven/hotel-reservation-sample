@@ -15,8 +15,7 @@ func (h *Handler) HandleGetHotels(c *fiber.Ctx) error {
 	if err := c.QueryParser(&qParams); err != nil {
 		return err
 	}
-
-	fmt.Println(qParams)
+	fmt.Println(qParams) // TODO: implement
 
 	user, err := h.hotelStore.GetHotels(c.Context())
 	if err != nil {
@@ -31,7 +30,6 @@ func (h *Handler) HandleGetHotels(c *fiber.Ctx) error {
 
 func (h *Handler) HandleGetRooms(c *fiber.Ctx) error {
 	hotelID := c.Params("hotelID")
-	fmt.Println(hotelID)
 
 	rooms, err := h.roomStore.GetRooms(c.Context(), hotelID)
 	if err != nil {
@@ -43,12 +41,6 @@ func (h *Handler) HandleGetRooms(c *fiber.Ctx) error {
 
 func (h *Handler) HandleGetHotel(c *fiber.Ctx) error {
 	hotelID := c.Params("hotelID")
-	req := getHotelRequest{
-		HotelID: hotelID,
-	}
-	if err := req.bind(h.validator); err != nil {
-		return c.Status(fiber.StatusUnprocessableEntity).JSON(utils.NewValidatorError(err))
-	}
 
 	hotel, err := h.hotelStore.GetHotelByID(c.Context(), hotelID)
 	if err != nil {
