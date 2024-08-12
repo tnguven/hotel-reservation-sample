@@ -1,0 +1,16 @@
+meta {
+  name: GetHotelByID
+  type: http
+  seq: 2
+}
+
+get {
+  url: http://localhost:5000/v1/hotels/66b774d645c39647fb6d3db7
+  body: none
+  auth: none
+}
+
+headers {
+  Content-type: application/json
+  x-api-token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjM0Njg1NzIsImlkIjoiNjZiN2Y1YTY1YWE2NDBjMWE2ZjI3NTViIn0.tMSHBVbuHRMCYNuU5KyQIFwC6PSpQtRKKwsde-MzyMA
+}

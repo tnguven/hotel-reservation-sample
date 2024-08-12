@@ -37,13 +37,11 @@ type SchemaFunc = func(c *fiber.Ctx) (interface{}, error)
 func MiddlewareValidation(v *Validator, getSchema SchemaFunc) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		schema, err := getSchema(c)
-
 		if err != nil {
 			return err
 		}
 		if err := v.Validate(schema); err != nil {
 			return err
-
 		}
 
 		return c.Next()

@@ -13,7 +13,7 @@ var secretString = []byte(os.Getenv("JWT_SECRET"))
 func GenerateJWT(id string) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":  id,
-		"exp": time.Now().Add(time.Minute * 10).Unix(),
+		"exp": time.Now().Add(time.Hour * 10).Unix(),
 	})
 	t, err := token.SignedString(secretString)
 	if err != nil {

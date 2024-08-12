@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/tnguven/hotel-reservation-app/store"
 	"github.com/tnguven/hotel-reservation-app/types"
@@ -102,5 +104,23 @@ func AuthRequestSchema(c *fiber.Ctx) (interface{}, error) {
 	return &authRequest{
 		Email:    authParams.Email,
 		Password: authParams.Password,
+	}, nil
+}
+
+type bookingRoomRequest struct {
+	FromDate  time.Time `validate:"required"`
+	TillDate  time.Time `validate:"required"`
+	NumPerson int       `validate:"required,numeric,min=1,max=20"`
+}
+
+func BookingRoomRequestSchema(c *fiber.Ctx) (interface{}, error) {
+	var bookingParams types.BookingParam
+	if err := c.BodyParser(&bookingParams); err != nil {
+		return nil, err
+	}
+	return &bookingRoomRequest{
+		FromDate:  bookingParams.FromDate,
+		TillDate:  bookingParams.TillDate,
+		NumPerson: bookingParams.CountPerson,
 	}, nil
 }

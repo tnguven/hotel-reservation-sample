@@ -6,22 +6,34 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/tnguven/hotel-reservation-app/store"
 )
 
-func JWTAuthentication(c *fiber.Ctx) error {
-	token, ok := c.GetReqHeaders()["X-Api-Token"]
-	if !ok {
-		return fmt.Errorf("unauthorized")
+func JWTAuthentication(userStore store.UserStore) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		token, ok := c.GetReqHeaders()["X-Api-Token"]
+		if !ok {
+			return fmt.Errorf("unauthorized")
+		}
+
+		claims, err := validateToken(token[0])
+		if err != nil {
+			fmt.Println(token)
+			return fmt.Errorf("token is invalid")
+		}
+
+		userID := claims["id"].(string)
+		user, err := userStore.GetByID(c.Context(), userID)
+		if err != nil {
+			return fmt.Errorf("unauthorized")
+		}
+
+		c.Context().SetUserValue("user", user)
+		// c.Locals("user", user)
+
+		return c.Next()
 	}
 
-	claims, err := validateToken(token[0])
-	if err != nil {
-		return fmt.Errorf("token is invalid")
-	}
-
-	c.Locals("userID", claims["id"])
-
-	return c.Next()
 }
 
 func validateToken(tokenStr string) (jwt.MapClaims, error) {

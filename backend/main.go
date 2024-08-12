@@ -33,15 +33,17 @@ func main() {
 	route := server.New(withLog)
 
 	var (
-		userStore  = store.NewMongoUserStore(database)
-		hotelStore = store.NewMongoHotelStore(database)
-		roomStore  = store.NewMongoRoomStore(database, hotelStore) // TODO refactor this shenanigan
+		userStore    = store.NewMongoUserStore(database)
+		hotelStore   = store.NewMongoHotelStore(database)
+		roomStore    = store.NewMongoRoomStore(database, hotelStore) // TODO refactor this shenanigan
+		bookingStore = store.NewMongoBookingStore(database, roomStore)
 	)
 
 	handlers := handler.NewHandler(&store.Stores{
-		Hotel: hotelStore,
-		Room:  roomStore,
-		User:  userStore,
+		Hotel:   hotelStore,
+		Room:    roomStore,
+		User:    userStore,
+		Booking: bookingStore,
 	})
 
 	handlers.Register(route)

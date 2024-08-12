@@ -117,5 +117,4 @@ func TestHandleAuthenticateFailure(t *testing.T) {
 	if result.Msg != "invalid credential" {
 		t.Fatalf("expected to get msg invalid credential but received: %s", result.Msg)
 	}
-
 }
