@@ -36,13 +36,11 @@ func (h *Handler) HandleCancelBooking(c *fiber.Ctx) error {
 	}
 
 	if user.IsAdmin {
-		_, err := h.bookingStore.CancelBookingByAdmin(c.Context(), bookingID)
-		if err != nil {
+		if err := h.bookingStore.CancelBookingByAdmin(c.Context(), bookingID); err != nil {
 			return err
 		}
 	} else {
-		_, err := h.bookingStore.CancelBookingByUserID(c.Context(), bookingID, user.ID)
-		if err != nil {
+		if err := h.bookingStore.CancelBookingByUserID(c.Context(), bookingID, user.ID); err != nil {
 			return err
 		}
 	}

@@ -20,8 +20,8 @@ type BookingStore interface {
 	GetBookingsByRoomID(context.Context, *types.BookingParam) ([]*types.Booking, error)
 	GetBookingsByID(context.Context, string) (*types.Booking, error)
 	GetBookings(context.Context) ([]*types.Booking, error)
-	CancelBookingByUserID(context.Context, string, primitive.ObjectID) (string, error)
-	CancelBookingByAdmin(context.Context, string) (string, error)
+	CancelBookingByUserID(context.Context, string, primitive.ObjectID) error
+	CancelBookingByAdmin(context.Context, string) error
 }
 
 type MongoBookingStore struct {
@@ -106,23 +106,26 @@ func (ms *MongoBookingStore) GetBookings(ctx context.Context) ([]*types.Booking,
 	return bookings, nil
 }
 
-func (ms *MongoBookingStore) CancelBookingByUserID(ctx context.Context, bookingId string, userId primitive.ObjectID) (string, error) {
+func (ms *MongoBookingStore) CancelBookingByUserID(ctx context.Context, bookingId string, userId primitive.ObjectID) error {
 	bookingOID, err := primitive.ObjectIDFromHex(bookingId)
 	if err != nil {
-		return "", err
+		return err
 	}
-
 	param := types.CancelBookingParam{Canceled: true}
 	resp, err := ms.coll.UpdateOne(ctx, bson.M{"_id": bookingOID, "userID": userId}, bson.M{
 		"$set": param.ToBsonMap(),
 	})
 	if err != nil {
-		return "", err
+		return err
+	}
+	if resp.MatchedCount == 0 {
+		return fmt.Errorf("booking not found")
+	}
+	if resp.ModifiedCount == 0 {
+		return fmt.Errorf("booking already canceled")
 	}
 
-	fmt.Printf("-0--- %+v", resp) //MatchedCount:1 ModifiedCount:0 UpsertedCount:0 U
-
-	return "", nil
+	return nil
 }
 
 func (ms *MongoBookingStore) CancelBookingByAdmin(ctx context.Context, bookingId string) error {
@@ -131,17 +134,13 @@ func (ms *MongoBookingStore) CancelBookingByAdmin(ctx context.Context, bookingId
 		return err
 	}
 	param := types.CancelBookingParam{Canceled: true}
-	resp, err := ms.coll.UpdateOne(ctx, bson.M{"_id": bookingOID}, bson.M{
-		"$set": param.ToBsonMap(),
-	})
+	resp, err := ms.coll.UpdateOne(ctx, bson.M{"_id": bookingOID}, bson.M{"$set": param.ToBsonMap()})
 	if err != nil {
 		return err
 	}
-
 	if resp.MatchedCount == 0 {
 		return fmt.Errorf("booking not found")
 	}
-
 	if resp.ModifiedCount == 0 {
 		return fmt.Errorf("booking already canceled")
 	}
