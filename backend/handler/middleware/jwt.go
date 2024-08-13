@@ -29,7 +29,6 @@ func JWTAuthentication(userStore store.UserStore) fiber.Handler {
 		}
 
 		c.Context().SetUserValue("user", user)
-		// c.Locals("user", user)
 
 		return c.Next()
 	}

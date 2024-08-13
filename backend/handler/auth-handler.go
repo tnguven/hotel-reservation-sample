@@ -39,7 +39,7 @@ func (h *Handler) HandleAuthenticate(c *fiber.Ctx) error {
 		return invalidCredResp(c)
 	}
 
-	token := utils.GenerateJWT(user.ID.Hex())
+	token := utils.GenerateJWT(user.ID.Hex(), user.IsAdmin)
 
 	return c.JSON(&AuthResponse{
 		User:  user,

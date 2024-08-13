@@ -3,6 +3,7 @@ package types
 import (
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -11,8 +12,9 @@ type Booking struct {
 	RoomID      primitive.ObjectID `bson:"roomID,omitempty" json:"roomID,omitempty"`
 	UserID      primitive.ObjectID `bson:"userID,omitempty" json:"userID,omitempty"`
 	CountPerson int                `bson:"countPerson,omitempty" json:"countPerson,omitempty"`
-	FromDate    time.Time          `bson:"from,omitempty" json:"fromDate,omitempty"`
+	FromDate    time.Time          `bson:"fromDate,omitempty" json:"fromDate,omitempty"`
 	TillDate    time.Time          `bson:"tillDate,omitempty" json:"tillDate,omitempty"`
+	Canceled    bool               `bson:"canceled,omitempty" json:"canceled,omitempty"`
 }
 
 type BookingParam struct {
@@ -36,4 +38,12 @@ func NewBookingFromParams(params *BookingParam) (*Booking, error) {
 		FromDate:    params.FromDate,
 		TillDate:    params.TillDate,
 	}, nil
+}
+
+type CancelBookingParam struct {
+	Canceled bool `json:"canceled"`
+}
+
+func (p *CancelBookingParam) ToBsonMap() bson.M {
+	return bson.M{"canceled": p.Canceled}
 }

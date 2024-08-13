@@ -34,7 +34,7 @@ func validateObjectID(fl validator.FieldLevel) bool {
 
 type SchemaFunc = func(c *fiber.Ctx) (interface{}, error)
 
-func MiddlewareValidation(v *Validator, getSchema SchemaFunc) fiber.Handler {
+func WithValidation(v *Validator, getSchema SchemaFunc) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		schema, err := getSchema(c)
 		if err != nil {

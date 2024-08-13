@@ -1,0 +1,24 @@
+meta {
+  name: BookRoom
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:5000/v1/rooms/66bb67d86d843d2b8e9c7935/book
+  body: json
+  auth: none
+}
+
+headers {
+  Content-type: application/json
+  X-Api-Token: {{X-Api-Token}}
+}
+
+body:json {
+  {
+    "countPerson": 2,
+    "fromDate": "2024-08-14T00:00:00Z",
+    "tillDate": "2024-08-16T00:00:00Z"
+  }
+}

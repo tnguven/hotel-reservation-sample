@@ -16,7 +16,15 @@ headers {
 
 body:json {
   {
-    "email": "test2@test.com",
-    "password": "secret1234"
+    "email": "test@test.com",
+    "password": "secret123"
   }
+}
+
+vars:pre-request {
+  : 
+}
+
+vars:post-response {
+  X-Api-Token: res.body.token
 }

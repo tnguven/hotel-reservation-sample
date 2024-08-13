@@ -28,10 +28,10 @@ func (h *Handler) HandleGetHotels(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(user)
 }
 
-func (h *Handler) HandleGetRooms(c *fiber.Ctx) error {
+func (h *Handler) HandleGetRoomsByHotelID(c *fiber.Ctx) error {
 	hotelID := c.Params("hotelID")
 
-	rooms, err := h.roomStore.GetRooms(c.Context(), hotelID)
+	rooms, err := h.roomStore.GetRoomsByHotelID(c.Context(), hotelID)
 	if err != nil {
 		return err
 	}

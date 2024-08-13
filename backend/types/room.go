@@ -1,14 +1,16 @@
 package types
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type RoomType string
 
 const (
 	FamilyRoomType     RoomType = "family"
-	FamilySuitRoomType RoomType = "family suit"
+	FamilySuitRoomType RoomType = "family_suit"
 	SuiteRoomType      RoomType = "suit"
-	HoneyMoonRoomType  RoomType = "honey moon"
+	HoneyMoonRoomType  RoomType = "honey_moon"
 	KingRoomType       RoomType = "king"
 )
 

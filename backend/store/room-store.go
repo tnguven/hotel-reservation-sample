@@ -16,7 +16,8 @@ type RoomStore interface {
 	Dropper
 
 	InsertRoom(context.Context, *types.Room) (*types.Room, error)
-	GetRooms(context.Context, string) ([]*types.Room, error)
+	GetRoomsByHotelID(context.Context, string) ([]*types.Room, error)
+	GetRooms(context.Context) ([]*types.Room, error)
 }
 
 type MongoRoomStore struct {
@@ -50,13 +51,26 @@ func (ms *MongoRoomStore) InsertRoom(ctx context.Context, room *types.Room) (*ty
 	return room, nil
 }
 
-func (ms *MongoRoomStore) GetRooms(ctx context.Context, hotelID string) ([]*types.Room, error) {
+func (ms *MongoRoomStore) GetRoomsByHotelID(ctx context.Context, hotelID string) ([]*types.Room, error) {
 	oid, err := primitive.ObjectIDFromHex(hotelID)
 	if err != nil {
 		return nil, err
 	}
 
 	resp, err := ms.coll.Find(ctx, bson.M{"hotelID": oid})
+	if err != nil {
+		return nil, err
+	}
+
+	var rooms []*types.Room
+	if err := resp.All(ctx, &rooms); err != nil {
+		return nil, err
+	}
+	return rooms, nil
+}
+
+func (ms *MongoRoomStore) GetRooms(ctx context.Context) ([]*types.Room, error) {
+	resp, err := ms.coll.Find(ctx, bson.M{}) // TODO: limit the query
 	if err != nil {
 		return nil, err
 	}
