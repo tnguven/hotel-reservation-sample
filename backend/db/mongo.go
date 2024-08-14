@@ -26,12 +26,15 @@ func getMongoClient(ctx context.Context, config config.Configs) *mongo.Client {
 		log.Fatal(err)
 	}
 
-	log.Println("creating indexes")
-	if err := createIndexes(ctx, client.Database(config.DbName)); err != nil {
-		log.Fatal(err)
-	}
-
 	log.Println("connected to the mongodb")
+
+	if config.CreateIndex {
+		log.Println("creating indexes...")
+		if err := createIndexes(ctx, client.Database(config.DbName)); err != nil {
+			log.Fatal(err)
+		}
+		log.Println("indexes are created")
+	}
 
 	return client
 }
@@ -40,6 +43,7 @@ func createIndexes(ctx context.Context, db *mongo.Database) error {
 	var wg sync.WaitGroup
 	errChan := make(chan error, 2)
 
+	wg.Add(2)
 	go createBookingIndexes(ctx, db, &wg, errChan)
 	go createUsersIndexes(ctx, db, &wg, errChan)
 
@@ -56,7 +60,6 @@ func createIndexes(ctx context.Context, db *mongo.Database) error {
 }
 
 func createBookingIndexes(ctx context.Context, db *mongo.Database, wg *sync.WaitGroup, errChan chan<- error) {
-	wg.Add(1)
 	defer wg.Done()
 
 	bookingCollection := db.Collection("bookings")
@@ -85,7 +88,6 @@ func createBookingIndexes(ctx context.Context, db *mongo.Database, wg *sync.Wait
 }
 
 func createUsersIndexes(ctx context.Context, db *mongo.Database, wg *sync.WaitGroup, errChan chan<- error) {
-	wg.Add(1)
 	defer wg.Done()
 
 	userCollection := db.Collection("users")
@@ -109,7 +111,7 @@ func createUsersIndexes(ctx context.Context, db *mongo.Database, wg *sync.WaitGr
 	log.Println("Created index users.email fields")
 }
 
-func New(ctx context.Context, config config.Configs) *mongo.Database {
+func New(ctx context.Context, config config.Configs) (*mongo.Client, *mongo.Database) {
 	client := getMongoClient(ctx, config)
-	return client.Database(config.DbName)
+	return client, client.Database(config.DbName)
 }

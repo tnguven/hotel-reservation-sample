@@ -13,15 +13,15 @@ func (handler *Handler) Register(app *fiber.App) {
 
 	auth := v1.Group("/auth")
 	auth.Post("/", mid.WithValidation(v, AuthRequestSchema), handler.HandleAuthenticate)
-
-	auth.Post("/signin", mid.WithValidation(v, AuthRequestSchema), handler.HandleSignIn)
+	auth.Post("/signin", mid.WithValidation(v, InsertUserRequestSchema), handler.HandleSignIn)
 
 	usersPrivate := v1.Group("/users", mid.JWTAuthentication(handler.userStore))
 	usersPrivate.Get("/", handler.HandleGetUsers)
 	usersPrivate.Post("/", mid.WithValidation(v, InsertUserRequestSchema), handler.HandlePostUser)
+
 	userPrivate := usersPrivate.Group("/:id")
 	userPrivate.Get("/", handler.HandleGetUser)
-	userPrivate.Put("/", handler.HandlePutUser)
+	userPrivate.Put("/", mid.WithValidation(v, UpdateUserRequestSchema), handler.HandlePutUser)
 	userPrivate.Delete("/", handler.HandleDeleteUser)
 
 	hotelsPrivate := v1.Group("/hotels", mid.JWTAuthentication(handler.userStore))

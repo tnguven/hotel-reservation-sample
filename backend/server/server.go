@@ -1,10 +1,12 @@
 package server
 
 import (
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/etag"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/tnguven/hotel-reservation-app/utils"
 )
 
 type ErrorResponse struct {
@@ -13,8 +15,12 @@ type ErrorResponse struct {
 
 func New(withLog bool) *fiber.App {
 	app := fiber.New(fiber.Config{
-		ErrorHandler: func(ctx *fiber.Ctx, err error) error {
-			return ctx.JSON(ErrorResponse{Error: err.Error()})
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			if validationErrors, ok := err.(validator.ValidationErrors); ok {
+				return c.Status(fiber.StatusBadRequest).JSON(utils.NewValidatorError(validationErrors))
+			}
+
+			return c.JSON(ErrorResponse{Error: err.Error()})
 		},
 	})
 

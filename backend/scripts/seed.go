@@ -3,23 +3,22 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"math"
 	"math/rand"
 	"time"
 
 	"github.com/tnguven/hotel-reservation-app/config"
 	"github.com/tnguven/hotel-reservation-app/db"
+	"github.com/tnguven/hotel-reservation-app/db/fixtures"
 	"github.com/tnguven/hotel-reservation-app/store"
 	"github.com/tnguven/hotel-reservation-app/types"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var (
-	ctx        = context.Background()
-	hotelStore store.HotelStore
-	roomStore  store.RoomStore
-	userStore  store.UserStore
+	ctx     = context.Background()
+	dbStore store.Stores
+	client  *mongo.Client
 )
 
 func init() {
@@ -28,113 +27,87 @@ func init() {
 		WithDbPassword("secret").
 		Validate()
 
-	database := db.New(ctx, configs)
+	mClient, database := db.New(ctx, configs)
+	client = mClient
 
-	userStore = store.NewMongoUserStore(database)
-	hotelStore = store.NewMongoHotelStore(database)
-	roomStore = store.NewMongoRoomStore(database, hotelStore)
+	userStore := store.NewMongoUserStore(database)
+	hotelStore := store.NewMongoHotelStore(database)
+	roomStore := store.NewMongoRoomStore(database, hotelStore)
+	bookingStore := store.NewMongoBookingStore(database, roomStore)
+
+	dbStore = store.Stores{
+		User:    userStore,
+		Hotel:   hotelStore,
+		Room:    roomStore,
+		Booking: bookingStore,
+	}
 
 	userStore.Drop(ctx)
 	hotelStore.Drop(ctx)
 	roomStore.Drop(ctx)
+	bookingStore.Drop(ctx)
 }
 
 func main() {
-	seedUser(true, "Tan", "Guven", "test@test.com", "secret123")
-	seedUser(false, "Can", "Guven", "test1@test.com", "secret123")
-	seedUser(false, "Fatos", "Guven", "tes2t@test.com", "secret123")
-	seedUser(false, "Leo", "Guven", "test3@test.com", "secret123")
+	defer client.Disconnect(context.TODO())
+	admin := fixtures.AddUser(dbStore, "Tan", "Guven", true)
+	fmt.Println("admin => ", admin.ID)
+	user := fixtures.AddUser(dbStore, "Can", "Guven", false)
+	fmt.Println("user => ", user.ID)
+	fixtures.AddUser(dbStore, "Fatos", "Guven", false)
+	fixtures.AddUser(dbStore, "Leo", "Guven", false)
 
 	hotels := [][]string{
 		{"Hilton", "Germany"},
 		{"Hilton", "United Kingdom"},
 		{"Hilton", "France"},
 		{"Hilton", "Ankara"},
-		{"Hilton", "Germany"},
-
+		{"Hilton", "Turkey"},
 		{"Sheraton", "Germany"},
 		{"Sheraton", "United Kingdom"},
 		{"Sheraton", "France"},
 		{"Sheraton", "Ankara"},
-		{"Sheraton", "Germany"},
-
+		{"Sheraton", "Turkey"},
 		{"Swissotel", "Germany"},
 		{"Swissotel", "United Kingdom"},
 		{"Swissotel", "France"},
 		{"Swissotel", "Ankara"},
-		{"Swissotel", "Germany"},
+		{"Swissotel", "Turkey"},
 	}
 
 	for _, h := range hotels {
-		seedHotel(h[0], h[1])
-	}
-}
-
-func seedHotel(hotelName string, location string) {
-	hotel := types.Hotel{
-		Name:     hotelName,
-		Location: location,
-		Rooms:    []primitive.ObjectID{},
-		Rating:   randIntGenerator(1, 10),
-	}
-
-	insertedHotel, err := hotelStore.InsertHotel(ctx, &hotel)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	rooms := []types.Room{
-		{
-			Type:      types.FamilyRoomType,
-			BasePrice: randomFloatGenerator(100.99, 200.99),
-			HotelID:   insertedHotel.ID,
-		},
-		{
-			Type:      types.SuiteRoomType,
-			BasePrice: randomFloatGenerator(200.99, 250.99),
-			HotelID:   insertedHotel.ID,
-		},
-		{
-			Type:      types.FamilySuitRoomType,
-			BasePrice: randomFloatGenerator(250.99, 300.99),
-			HotelID:   insertedHotel.ID,
-		},
-		{
-			Type:      types.HoneyMoonRoomType,
-			BasePrice: randomFloatGenerator(300.99, 350.99),
-			HotelID:   insertedHotel.ID,
-		},
-		{
-			Type:      types.KingRoomType,
-			BasePrice: randomFloatGenerator(350.99, 700.99),
-			HotelID:   insertedHotel.ID,
-		},
-	}
-
-	for _, room := range rooms {
-		insertedRoom, err := roomStore.InsertRoom(ctx, &room)
-		if err != nil {
-			log.Fatal(err)
+		hotel := fixtures.AddHotel(dbStore, h[0], h[1], randIntGenerator(1, 10), nil)
+		rooms := []types.Room{
+			{
+				Type:      types.FamilyRoomType,
+				BasePrice: randomFloatGenerator(100.99, 200.99),
+			},
+			{
+				Type:      types.SuiteRoomType,
+				BasePrice: randomFloatGenerator(200.99, 250.99),
+			},
+			{
+				Type:      types.FamilySuitRoomType,
+				BasePrice: randomFloatGenerator(250.99, 300.99),
+			},
+			{
+				Type:      types.HoneyMoonRoomType,
+				BasePrice: randomFloatGenerator(300.99, 350.99),
+			},
+			{
+				Type:      types.KingRoomType,
+				BasePrice: randomFloatGenerator(350.99, 700.99),
+			},
 		}
-		fmt.Println(insertedRoom)
-	}
-}
 
-func seedUser(isAdmin bool, fname, lname, email, password string) {
-	user, err := types.NewUserFromParams(types.CreateUserParams{
-		Email:     email,
-		FirstName: fname,
-		LastName:  lname,
-		Password:  password,
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	user.IsAdmin = isAdmin
-	_, err = userStore.InsertUser(context.TODO(), user)
-	if err != nil {
-		log.Fatal(err)
+		for _, room := range rooms {
+			insertedRoom := fixtures.AddRoom(dbStore, room.Type, hotel.ID, room.BasePrice)
+			if randIntGenerator(1, 10) > 5 {
+				booked := fixtures.AddBooking(dbStore, user.ID, insertedRoom.ID.Hex(), time.Now(), time.Now().AddDate(0, 0, randIntGenerator(1, 10)))
+				fmt.Println("booking =>", booked.ID)
+			}
+			fmt.Println(insertedRoom)
+		}
 	}
 }
 

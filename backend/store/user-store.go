@@ -37,18 +37,17 @@ func NewMongoUserStore(db *mongo.Database) *MongoUserStore {
 }
 
 func (ms *MongoUserStore) GetByID(ctx context.Context, id string) (*types.User, error) {
-	var user types.User
-
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
 	}
 
+	var user *types.User
 	if err := ms.coll.FindOne(ctx, bson.M{"_id": oid}).Decode(&user); err != nil {
 		return nil, err
 	}
 
-	return &user, nil
+	return user, nil
 }
 
 func (ms *MongoUserStore) GetUserByEmail(ctx context.Context, email string) (*types.User, error) {

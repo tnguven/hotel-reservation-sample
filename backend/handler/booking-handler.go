@@ -34,7 +34,6 @@ func (h *Handler) HandleCancelBooking(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-
 	if user.IsAdmin {
 		if err := h.bookingStore.CancelBookingByAdmin(c.Context(), bookingID); err != nil {
 			return err

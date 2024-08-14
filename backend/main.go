@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 
 	"github.com/tnguven/hotel-reservation-app/config"
 	"github.com/tnguven/hotel-reservation-app/db"
@@ -23,11 +24,13 @@ func main() {
 	configs := config.New().
 		WithDbUserName("admin").
 		WithDbPassword("secret").
+		WithDbName("hotel_io").
+		WithDbCreateIndex(os.Getenv("CREATE_INDEX") == "true").
 		Validate()
 
 	ctx := context.Background()
 
-	database := db.New(ctx, configs)
+	_, database := db.New(ctx, configs)
 
 	withLog := true
 	route := server.New(withLog)

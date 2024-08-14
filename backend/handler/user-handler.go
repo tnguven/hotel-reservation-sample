@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/tnguven/hotel-reservation-app/types"
@@ -10,8 +11,10 @@ import (
 )
 
 func (h *Handler) HandleGetUser(c *fiber.Ctx) error {
-	id, _ := c.Locals("userID").(string)
+	id := c.Params("id")
+	fmt.Println("INNERRR", id)
 	user, err := h.userStore.GetByID(c.Context(), id)
+	fmt.Println("INNERRR user", user)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return c.Status(fiber.StatusNotFound).JSON(utils.NotFound())
@@ -58,7 +61,7 @@ func (h *Handler) HandlePostUser(c *fiber.Ctx) error {
 }
 
 func (h *Handler) HandleDeleteUser(c *fiber.Ctx) error {
-	id, _ := c.Locals("userID").(string)
+	id := c.Params("id")
 
 	if err := h.userStore.DeleteUser(c.Context(), id); err != nil {
 		return err
@@ -69,7 +72,7 @@ func (h *Handler) HandleDeleteUser(c *fiber.Ctx) error {
 
 func (h *Handler) HandlePutUser(c *fiber.Ctx) error {
 	var (
-		id, _  = c.Locals("userID").(string)
+		id     = c.Params("id")
 		params *types.UpdateUserParams
 	)
 

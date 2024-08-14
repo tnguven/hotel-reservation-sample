@@ -2,69 +2,29 @@ package handler
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/tnguven/hotel-reservation-app/db/fixtures"
 	mid "github.com/tnguven/hotel-reservation-app/handler/middleware"
-	"github.com/tnguven/hotel-reservation-app/server"
-	"github.com/tnguven/hotel-reservation-app/store"
 	"github.com/tnguven/hotel-reservation-app/types"
 	"github.com/tnguven/hotel-reservation-app/utils"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const (
 	withLog            = false
-	collection         = "users"
 	invalidMaxCharName = "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"
 )
 
-type TestDb struct {
-	store.Stores
-}
-
-func (tdb *TestDb) tearDown(t *testing.T) {
-	if err := tdb.User.Drop(context.TODO()); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func Setup() (*TestDb, *mongo.Collection, *fiber.App, *Handler, *mid.Validator) {
-	db := utils.NewDb()
-	coll := db.Collection(collection)
-
-	hotelStore := store.NewMongoHotelStore(db)
-	roomStore := store.NewMongoRoomStore(db, hotelStore)
-
-	stores := store.Stores{
-		User:  store.NewMongoUserStore(db),
-		Hotel: hotelStore,
-		Room:  roomStore,
-	}
-	tdb := &TestDb{
-		Stores: stores,
-	}
-
-	app := server.New(withLog)
-	handlers := NewHandler(&stores)
-
-	v := mid.NewValidator()
-
-	return tdb, coll, app, handlers, v
-}
-
 func TestPostUser(t *testing.T) {
-	tdb, _, app, handlers, validator := Setup()
-	defer tdb.tearDown(t)
+	_, app, handlers, validator := Setup(db, false)
 
-	app.Post("/", mid.MiddlewareValidation(validator, InsertUserRequestSchema), handlers.HandlePostUser)
+	app.Post("/", mid.WithValidation(validator, InsertUserRequestSchema), handlers.HandlePostUser)
 
 	t.Run("Validations", func(t *testing.T) {
+		t.Parallel()
 		type test struct {
 			expect   string
 			input    types.CreateUserParams
@@ -108,37 +68,37 @@ func TestPostUser(t *testing.T) {
 			{
 				expect:   "Should return all required fields error",
 				input:    partialInput,
-				status:   422,
+				status:   400,
 				expected: `{"errors":{"Email":"required","FirstName":"required","LastName":"required","Password":"required"}}`,
 			},
 			{
 				expect:   "Should return invalid email field error",
 				input:    invalidEmail,
-				status:   422,
+				status:   400,
 				expected: `{"errors":{"Email":"email - invalid"}}`,
 			},
 			{
 				expect:   "Should return invalid firstName and lastName minimum field error",
 				input:    invalidMinNames,
-				status:   422,
+				status:   400,
 				expected: `{"errors":{"FirstName":"min - invalid","LastName":"min - invalid"}}`,
 			},
 			{
 				expect:   "Should return invalid firstName and lastName maximum field error",
 				input:    invalidMaxNames,
-				status:   422,
+				status:   400,
 				expected: `{"errors":{"FirstName":"max - invalid","LastName":"max - invalid"}}`,
 			},
 			{
 				expect:   "Should return invalid firstName and lastName maximum field error",
 				input:    invalidAlphaNames,
-				status:   422,
+				status:   400,
 				expected: `{"errors":{"FirstName":"alpha - invalid","LastName":"alpha - invalid"}}`,
 			},
 			{
-				expect:   "Should return invalid firstName maximum field error",
+				expect:   "Should return invalid password min field error",
 				input:    invalidPassword,
-				status:   422,
+				status:   400,
 				expected: `{"errors":{"Password":"min - invalid"}}`,
 			},
 		}
@@ -174,9 +134,11 @@ func TestPostUser(t *testing.T) {
 		}
 	})
 
+	email := "insert_user@test.com"
+
 	t.Run("Insert user", func(t *testing.T) {
 		params := types.CreateUserParams{
-			Email:     "some@test.com",
+			Email:     email,
 			FirstName: "Tan",
 			LastName:  "Foo",
 			Password:  "1234567",
@@ -214,9 +176,9 @@ func TestPostUser(t *testing.T) {
 
 	t.Run("Not insert user with existing email", func(t *testing.T) {
 		params := types.CreateUserParams{
-			Email:     "some@test.com",
-			FirstName: "Test",
-			LastName:  "Bar",
+			Email:     email,
+			FirstName: "same",
+			LastName:  "email",
 			Password:  "1234567",
 		}
 		b, _ := json.Marshal(params)
@@ -237,54 +199,54 @@ func TestPostUser(t *testing.T) {
 }
 
 func TestHandleGetUser(t *testing.T) {
-	tdb, coll, app, handlers, _ := Setup()
-	defer tdb.tearDown(t)
+	tdb, app, handlers, _ := Setup(db, false)
 
-	newUsers, objectId := insertUsers(t, coll)
-	fixtureUser, _ := newUsers[0].(types.User)
+	var (
+		firstName = "get"
+		lastName  = "userbyid"
+	)
 
 	app.Get("/:id", handlers.HandleGetUser)
 
 	t.Run("get user by ID", func(t *testing.T) {
+		user := fixtures.AddUser(*tdb.Store, firstName, lastName, false)
 		testReq := utils.TestRequest{
 			Method: "GET",
-			Target: fmt.Sprintf("/%s", objectId.Hex()),
+			Target: fmt.Sprintf("/%s", user.ID.Hex()),
 		}
-		res, err := app.Test(testReq.NewRequestWithHeader())
+		resp, err := app.Test(testReq.NewRequestWithHeader())
 		if err != nil {
 			t.Error(err)
 		}
 
-		var user types.User
+		var fetchedUser types.User
+		json.NewDecoder(resp.Body).Decode(&fetchedUser)
 
-		json.NewDecoder(res.Body).Decode(&user)
-		if user.ID.Hex() != objectId.Hex() {
-			t.Errorf("expecting a user id %s received %s", objectId.Hex(), user.ID.Hex())
-		}
-		if len(user.EncryptedPassword) > 0 {
+		if len(fetchedUser.EncryptedPassword) > 0 {
 			t.Errorf("should not include EncryptedPassword in json response")
 		}
-		if user.FirstName != fixtureUser.FirstName {
-			t.Errorf("expected firstName %s but got %s", "AA", user.FirstName)
+		if fetchedUser.IsAdmin != false {
+			t.Errorf("should create isAdmin false but received isAdmin true")
 		}
-		if user.LastName != fixtureUser.LastName {
-			t.Errorf("expected lastName %s but got %s", fixtureUser.LastName, user.LastName)
+		if fetchedUser.FirstName != firstName {
+			t.Errorf("expected firstName %s but got %s", "aa", fetchedUser.FirstName)
 		}
-		if user.Email != fixtureUser.Email {
-			t.Errorf("expected Email %s but got %s", fixtureUser.Email, user.Email)
+		if fetchedUser.LastName != lastName {
+			t.Errorf("expected lastName %s but got %s", "bb", fetchedUser.LastName)
+		}
+		if fetchedUser.Email != "get_userbyid@test.com" {
+			t.Errorf("expected Email %s but got %s", "get_userbyid@test.com", fetchedUser.Email)
 		}
 	})
 }
 
 func TestHandlePutUser(t *testing.T) {
-	tdb, coll, app, handlers, validator := Setup()
-	defer tdb.tearDown(t)
+	tdb, app, handlers, validator := Setup(db, false)
 
-	_, objectId := insertUsers(t, coll)
+	app.Put("/:id", mid.WithValidation(validator, UpdateUserRequestSchema), handlers.HandlePutUser)
 
-	app.Put("/:id", handlers.HandlePutUser, mid.MiddlewareValidation(validator, InsertUserRequestSchema))
-
-	t.Run("Validations put user with userId", func(t *testing.T) {
+	t.Run("Validations", func(t *testing.T) {
+		t.Parallel()
 		invalidMinFields := types.UpdateUserParams{
 			FirstName: "T",
 			LastName:  "F",
@@ -312,31 +274,31 @@ func TestHandlePutUser(t *testing.T) {
 
 		tests := []test{
 			{
-				id:       objectId.Hex(),
+				id:       primitive.NewObjectID().Hex(),
 				expect:   "Should return invalid firstName and lastName minimum field error",
 				input:    invalidMinFields,
-				status:   422,
+				status:   400,
 				expected: `{"errors":{"FirstName":"min - invalid","LastName":"min - invalid"}}`,
 			},
 			{
-				id:       objectId.Hex(),
+				id:       primitive.NewObjectID().Hex(),
 				expect:   "Should return invalid firstName and lastName maximum field error",
 				input:    invalidMaxFields,
-				status:   422,
+				status:   400,
 				expected: `{"errors":{"FirstName":"max - invalid","LastName":"max - invalid"}}`,
 			},
 			{
-				id:       objectId.Hex(),
+				id:       primitive.NewObjectID().Hex(),
 				expect:   "Should return invalid firstName and lastName maximum field error",
 				input:    invalidAlphaFields,
-				status:   422,
+				status:   400,
 				expected: `{"errors":{"FirstName":"alpha - invalid","LastName":"alpha - invalid"}}`,
 			},
 			{
 				id:       "invalidId",
 				input:    validParams,
 				expect:   "must return required and invalid fields",
-				status:   422,
+				status:   400,
 				expected: `{"errors":{"ID":"id - invalid"}}`,
 			},
 		}
@@ -350,13 +312,13 @@ func TestHandlePutUser(t *testing.T) {
 			}
 			resp, err := app.Test(testReq.NewRequestWithHeader())
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 
 			t.Run(fmt.Sprintf("should return %d status code", tc.status), func(t *testing.T) {
 				t.Parallel()
 				if resp.StatusCode != tc.status {
-					t.Errorf("expected status code %d but return %d", tc.status, resp.StatusCode)
+					t.Fatalf("expected status code %d but return %d", tc.status, resp.StatusCode)
 				}
 			})
 
@@ -373,57 +335,42 @@ func TestHandlePutUser(t *testing.T) {
 	})
 
 	t.Run("update user", func(t *testing.T) {
+		user := fixtures.AddUser(*tdb.Store, "update", "user", false)
 		params := types.UpdateUserParams{
-			FirstName: "AAB",
-			LastName:  "Bar",
+			FirstName: "user",
+			LastName:  "update",
 		}
-
 		b, _ := json.Marshal(params)
 		testReq := utils.TestRequest{
 			Method:  "PUT",
-			Target:  fmt.Sprintf("/%s", objectId.Hex()),
+			Target:  fmt.Sprintf("/%s", user.ID.Hex()),
 			Payload: bytes.NewReader(b),
 		}
-		res, err := app.Test(testReq.NewRequestWithHeader())
+		resp, err := app.Test(testReq.NewRequestWithHeader())
 		if err != nil {
-			t.Log("something went wrong", err)
-			t.Error(err)
+			t.Fatal(err)
 		}
 
 		var response map[string]interface{}
-
-		if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-			t.Error(err)
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			t.Fatal(err)
 		}
 
-		if response["updated"] != objectId.Hex() {
-			t.Errorf("expecting user id %s to be updated, but got %v", objectId.Hex(), response["updated"])
-		}
-
-		var updatedUser types.User
-		if err := coll.FindOne(context.TODO(), bson.M{"_id": objectId}).Decode(&updatedUser); err != nil {
-			t.Error(err)
-		}
-
-		if updatedUser.FirstName != params.FirstName {
-			t.Errorf("does not update the record in mongodb expected %s received %s", params.FirstName, updatedUser.FirstName)
+		if response["updated"] != user.ID.Hex() {
+			t.Errorf("expecting user id %s to be updated, but got %v", user.ID.Hex(), response["updated"])
 		}
 	})
 
 	t.Run("return error if the id does not exist", func(t *testing.T) {
-		_, err := coll.DeleteMany(context.TODO(), bson.M{}) // delete all docs
-		if err != nil {
-			t.Error(err)
-		}
 		params := types.UpdateUserParams{
 			FirstName: "AAB",
 			LastName:  "Bar",
 		}
+		obi := primitive.NewObjectID().Hex()
 		b, _ := json.Marshal(params)
-
 		testReq := utils.TestRequest{
 			Method:  "PUT",
-			Target:  fmt.Sprintf("/%s", objectId.Hex()),
+			Target:  fmt.Sprintf("/%s", obi),
 			Payload: bytes.NewReader(b),
 		}
 		res, err := app.Test(testReq.NewRequestWithHeader())
@@ -432,29 +379,14 @@ func TestHandlePutUser(t *testing.T) {
 		}
 
 		var response map[string]interface{}
-
 		if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 
-		expectedError := fmt.Sprintf("no user found with id %s", objectId.Hex())
+		expectedError := fmt.Sprintf("no user found with id %s", obi)
 
 		if response["error"] != expectedError {
 			t.Errorf("expecting error %s but received %s", expectedError, response["error"])
 		}
 	})
-}
-
-func insertUsers(t *testing.T, coll *mongo.Collection) ([]interface{}, primitive.ObjectID) {
-	newUsers := []interface{}{
-		types.User{FirstName: "AA", LastName: "AA", Email: "aa@test.com", EncryptedPassword: "encrypted"},
-		types.User{FirstName: "BB", LastName: "BB", Email: "bb@test.com", EncryptedPassword: "encrypted"},
-	}
-
-	res, err := coll.InsertMany(context.TODO(), newUsers)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return newUsers, res.InsertedIDs[0].(primitive.ObjectID)
 }

@@ -11,12 +11,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func NewDb() *mongo.Database {
+func NewDb() (*mongo.Client, *mongo.Database) {
 	ctx := context.Background()
 	return db.New(ctx, config.New().
 		WithDbUserName("admin").
 		WithDbPassword("secret").
-		WithDbName("test"))
+		WithDbCreateIndex(true).
+		WithDbName("hotel_io_test").
+		Validate())
 }
 
 type TestRequest struct {

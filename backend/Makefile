@@ -6,11 +6,17 @@ build:
 run: build
 	@"${BUILD_DIR}"
 
+# test:
+# 	@go test -v ./... -count=1
+
+test-rerun:
+	@go run gotest.tools/gotestsum@latest --debug --format testname --rerun-fails --packages="./..." -- -count=2
+
 test:
-	@go test -v ./... -count=1
+	@go run gotest.tools/gotestsum@latest --debug --format testname --packages="./..." -- -count=1
 
 test-only:
-	@go test -v ./... --run "$1" -count=1
+	@go run gotest.tools/gotestsum@latest --debug --format testname --packages="./..." -- --run $(TEST_NAME) -count=1
 
 seed:
 	@go run ./scripts/seed.go

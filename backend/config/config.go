@@ -6,15 +6,15 @@ import (
 )
 
 const (
-	dbUri  = "mongodb://localhost:27017"
-	dbName = "hotel_io"
+	dbUri = "mongodb://localhost:27017"
 )
 
 type Configs struct {
-	DbURI      string
-	DbName     string
-	DbUserName string
-	DbPassword string
+	DbURI       string
+	DbName      string
+	DbUserName  string
+	DbPassword  string
+	CreateIndex bool
 }
 
 func (conf Configs) WithDbURI(dbURI string) Configs {
@@ -37,6 +37,11 @@ func (conf Configs) WithDbPassword(password string) Configs {
 	return conf
 }
 
+func (conf Configs) WithDbCreateIndex(withIndex bool) Configs {
+	conf.CreateIndex = withIndex
+	return conf
+}
+
 func (conf Configs) Validate() Configs {
 	if conf.DbName == "" {
 		log.Fatal(errors.New("missing database name"))
@@ -50,7 +55,7 @@ func (conf Configs) Validate() Configs {
 
 func New() *Configs {
 	return &Configs{
-		DbURI:  dbUri,
-		DbName: dbName,
+		DbURI:       dbUri,
+		CreateIndex: false,
 	}
 }
