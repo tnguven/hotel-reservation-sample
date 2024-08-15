@@ -14,7 +14,7 @@ func (h *Handler) HandleGetUser(c *fiber.Ctx) error {
 	user, err := h.userStore.GetByID(c.Context(), id)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return c.Status(fiber.StatusNotFound).JSON(utils.NotFound())
+			return utils.NotFoundError()
 		}
 		return err
 	}
@@ -26,13 +26,12 @@ func (h *Handler) HandleGetUsers(c *fiber.Ctx) error {
 	users, err := h.userStore.GetUsers(c.Context())
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not found"})
+			return utils.NotFoundError()
 		}
-
 		return err
 	}
 
-	return c.JSON(users)
+	return c.Status(fiber.StatusOK).JSON(users)
 }
 
 func (h *Handler) HandlePostUser(c *fiber.Ctx) error {

@@ -5,12 +5,12 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/tnguven/hotel-reservation-app/types"
+	"github.com/tnguven/hotel-reservation-app/utils"
 )
 
 func (h *Handler) HandleGetBookingsAsUser(c *fiber.Ctx) error {
 	user, _ := c.Context().UserValue("user").(*types.User)
 	bookings, err := h.bookingStore.GetBookingsAsUser(c.Context(), user)
-
 	if err != nil {
 		return err
 	}
@@ -20,7 +20,6 @@ func (h *Handler) HandleGetBookingsAsUser(c *fiber.Ctx) error {
 
 func (h *Handler) HandleGetBookingsAsAdmin(c *fiber.Ctx) error {
 	bookings, err := h.bookingStore.GetBookingsAsAdmin(c.Context())
-
 	if err != nil {
 		return err
 	}
@@ -43,7 +42,7 @@ func (h *Handler) HandleCancelBooking(c *fiber.Ctx) error {
 	bookingID := c.Params("bookingID")
 	user, err := getAuthenticatedUser(c)
 	if err != nil {
-		return err
+		return utils.UnauthorizeError()
 	}
 	if user.IsAdmin {
 		if err := h.bookingStore.CancelBookingByAdmin(c.Context(), bookingID); err != nil {

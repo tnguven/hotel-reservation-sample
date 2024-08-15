@@ -20,7 +20,7 @@ func (h *Handler) HandleGetHotels(c *fiber.Ctx) error {
 	user, err := h.hotelStore.GetHotels(c.Context())
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return c.Status(fiber.StatusNotFound).JSON(utils.NotFound())
+			return utils.NotFoundError()
 		}
 		return err
 	}

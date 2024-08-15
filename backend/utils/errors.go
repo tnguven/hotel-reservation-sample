@@ -2,53 +2,74 @@ package utils
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/go-playground/validator/v10"
 )
 
 type Error struct {
-	Errors map[string]interface{} `json:"errors"`
+	Errors  map[string]interface{} `json:"errors"`
+	Code    int                    `json:"code"`
+	Message string                 `json:"message"`
+}
+
+func (err Error) Error() string {
+	return err.Message
 }
 
 // add switch other variant
-func NewError(err error) Error {
-	e := Error{}
-	e.Errors = make(map[string]interface{})
+func NewError(err error, code int) Error {
+	errors := make(map[string]interface{})
+
 	switch v := err.(type) {
 	default:
-		e.Errors["body"] = v.Error()
+		errors["body"] = v.Error()
 	}
-	return e
+
+	return Error{
+		Code:    code,
+		Message: http.StatusText(code),
+		Errors:  errors,
+	}
 }
 
-func NewValidatorError(err error) Error {
-	e := Error{}
-	e.Errors = make(map[string]interface{})
-	errs := err.(validator.ValidationErrors) // casting
+func ValidatorError(err error) Error {
+	errors := make(map[string]interface{})
 
-	for _, v := range errs {
+	for _, v := range err.(validator.ValidationErrors) {
 		suffix := ""
 
 		if v.Tag() != "required" {
 			suffix = " - invalid"
 		}
 
-		e.Errors[v.Field()] = fmt.Sprintf("%v%v", v.Tag(), suffix)
+		errors[v.Field()] = fmt.Sprintf("%v%v", v.Tag(), suffix)
 	}
 
-	return e
+	return Error{
+		Code:    http.StatusBadRequest,
+		Message: http.StatusText(http.StatusBadRequest),
+		Errors:  errors,
+	}
 }
 
-func AccessForbidden() Error {
-	e := Error{}
-	e.Errors = make(map[string]interface{})
-	e.Errors["body"] = "access forbidden"
-	return e
+func AccessForbiddenError() Error {
+	return Error{
+		Message: http.StatusText(http.StatusForbidden),
+		Code:    http.StatusForbidden,
+	}
 }
 
-func NotFound() Error {
-	e := Error{}
-	e.Errors = make(map[string]interface{})
-	e.Errors["body"] = "resource not found"
-	return e
+func NotFoundError() Error {
+	return Error{
+		Message: http.StatusText(http.StatusNotFound),
+		Code:    http.StatusNotFound,
+	}
+}
+
+func UnauthorizeError() Error {
+	return Error{
+		Message: http.StatusText(http.StatusNotFound),
+		Code:    http.StatusNotFound,
+	}
 }

@@ -3,6 +3,7 @@ package middleware
 import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"github.com/tnguven/hotel-reservation-app/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -41,7 +42,7 @@ func WithValidation(v *Validator, getSchema SchemaFunc) fiber.Handler {
 			return err
 		}
 		if err := v.Validate(schema); err != nil {
-			return err
+			return utils.ValidatorError(err)
 		}
 
 		return c.Next()

@@ -1,9 +1,6 @@
 package server
 
 import (
-	"fmt"
-
-	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/etag"
@@ -18,15 +15,12 @@ type ErrorResponse struct {
 func New(withLog bool) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			if validationErrors, ok := err.(validator.ValidationErrors); ok {
-				return c.Status(fiber.StatusBadRequest).JSON(utils.NewValidatorError(validationErrors))
+			if utilsError, ok := err.(utils.Error); ok {
+				return c.Status(utilsError.Code).JSON(utilsError)
 			}
 
-			if fmt.Sprint(err) == "forbidden" {
-				return c.Status(fiber.StatusForbidden).JSON(utils.AccessForbidden())
-			}
-
-			return c.JSON(ErrorResponse{Error: err.Error()})
+			return c.Status(fiber.StatusInternalServerError).
+				JSON(utils.NewError(err, fiber.StatusInternalServerError))
 		},
 	})
 
