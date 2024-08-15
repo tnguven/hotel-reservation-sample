@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	mid "github.com/tnguven/hotel-reservation-app/handler/middleware"
+	"github.com/tnguven/hotel-reservation-app/config"
 	"github.com/tnguven/hotel-reservation-app/server"
 	"github.com/tnguven/hotel-reservation-app/store"
 	"github.com/tnguven/hotel-reservation-app/types"
@@ -69,7 +69,7 @@ func (tdb *TestDb) tearDown(t *testing.T) {
 	}
 }
 
-func setup(db *mongo.Database, withLog bool) (*TestDb, *fiber.App, *Handler, *mid.Validator) {
+func setup(db *mongo.Database, withLog bool, configs *config.Configs) (*TestDb, *fiber.App) {
 	hotelStore := store.NewMongoHotelStore(db)
 	roomStore := store.NewMongoRoomStore(db, hotelStore)
 	bookingStore := store.NewMongoBookingStore(db, roomStore)
@@ -84,5 +84,10 @@ func setup(db *mongo.Database, withLog bool) (*TestDb, *fiber.App, *Handler, *mi
 		db: db,
 	}
 
-	return tdb, server.New(withLog), NewHandler(tdb.Store), mid.NewValidator()
+	app := server.New(withLog)
+
+	handlers := NewHandler(tdb.Store)
+	handlers.Register(app, configs)
+
+	return tdb, app
 }

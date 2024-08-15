@@ -7,16 +7,15 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/tnguven/hotel-reservation-app/db/fixtures"
-	mid "github.com/tnguven/hotel-reservation-app/handler/middleware"
 	"github.com/tnguven/hotel-reservation-app/types"
 	"github.com/tnguven/hotel-reservation-app/utils"
 )
 
 func TestHandleGetBookings(t *testing.T) {
-	tdb, app, handlers, _ := setup(db, false)
+	tdb, app := setup(db, false, configs)
 
-	app.Get("/admin", mid.JWTAuthentication(tdb.Store.User, configs), mid.WithAdminAuth, handlers.HandleGetBookingsAsAdmin)
-	app.Get("/user", mid.JWTAuthentication(tdb.Store.User, configs), handlers.HandleGetBookingsAsUser)
+	// app.Get("/admin", mid.JWTAuthentication(tdb.Store.User, configs), mid.WithAdminAuth, handlers.HandleGetBookingsAsAdmin)
+	// app.Get("/user", mid.JWTAuthentication(tdb.Store.User, configs), handlers.HandleGetBookingsAsUser)
 
 	var (
 		user  = fixtures.AddUser(*tdb.Store, "get", "booking", false)
@@ -30,7 +29,7 @@ func TestHandleGetBookings(t *testing.T) {
 	t.Run("restrict_for_non_admin_user", func(t *testing.T) {
 		testReq := utils.TestRequest{
 			Method: "GET",
-			Target: "/admin",
+			Target: "/v1/admin/bookings",
 			Token:  utils.GenerateJWT(user.ID.Hex(), user.IsAdmin, configs),
 		}
 
@@ -51,7 +50,7 @@ func TestHandleGetBookings(t *testing.T) {
 
 		testReq := utils.TestRequest{
 			Method: "GET",
-			Target: "/admin",
+			Target: "/v1/admin/bookings",
 			Token:  utils.GenerateJWT(admin.ID.Hex(), admin.IsAdmin, configs),
 		}
 		resp, err := app.Test(testReq.NewRequestWithHeader())
@@ -76,7 +75,7 @@ func TestHandleGetBookings(t *testing.T) {
 	t.Run("get_bookings as user", func(t *testing.T) {
 		testReq := utils.TestRequest{
 			Method: "GET",
-			Target: "/user",
+			Target: "/v1/bookings",
 			Token:  utils.GenerateJWT(user.ID.Hex(), user.IsAdmin, configs),
 		}
 

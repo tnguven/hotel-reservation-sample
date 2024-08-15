@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/tnguven/hotel-reservation-app/db/fixtures"
-	mid "github.com/tnguven/hotel-reservation-app/handler/middleware"
 	"github.com/tnguven/hotel-reservation-app/types"
 	"github.com/tnguven/hotel-reservation-app/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -19,8 +18,9 @@ const (
 )
 
 func TestPostUser(t *testing.T) {
-	_, app, handlers, validator := setup(db, false)
-	app.Post("/", mid.WithValidation(validator, InsertUserRequestSchema), handlers.HandlePostUser)
+	_, app := setup(db, false, configs)
+
+	const target = "/v1/users"
 
 	t.Run("Validations", func(t *testing.T) {
 		t.Parallel()
@@ -106,7 +106,7 @@ func TestPostUser(t *testing.T) {
 			b, _ := json.Marshal(tc.input)
 			testReq := utils.TestRequest{
 				Method:  "POST",
-				Target:  "/",
+				Target:  target,
 				Payload: bytes.NewReader(b),
 			}
 			resp, err := app.Test(testReq.NewRequestWithHeader())
@@ -145,7 +145,7 @@ func TestPostUser(t *testing.T) {
 		b, _ := json.Marshal(params)
 		testReq := utils.TestRequest{
 			Method:  "POST",
-			Target:  "/",
+			Target:  target,
 			Payload: bytes.NewReader(b),
 		}
 		res, err := app.Test(testReq.NewRequestWithHeader())
@@ -183,7 +183,7 @@ func TestPostUser(t *testing.T) {
 		b, _ := json.Marshal(params)
 		testReq := utils.TestRequest{
 			Method:  "POST",
-			Target:  "/",
+			Target:  target,
 			Payload: bytes.NewReader(b),
 		}
 		res, err := app.Test(testReq.NewRequestWithHeader())
@@ -198,20 +198,18 @@ func TestPostUser(t *testing.T) {
 }
 
 func TestHandleGetUser(t *testing.T) {
-	tdb, app, handlers, _ := setup(db, false)
-
+	tdb, app := setup(db, false, configs)
 	var (
 		firstName = "get"
 		lastName  = "userbyid"
 	)
-
-	app.Get("/:id", handlers.HandleGetUser)
+	const target = "/v1/users"
 
 	t.Run("get user by ID", func(t *testing.T) {
 		user := fixtures.AddUser(*tdb.Store, firstName, lastName, false)
 		testReq := utils.TestRequest{
 			Method: "GET",
-			Target: fmt.Sprintf("/%s", user.ID.Hex()),
+			Target: fmt.Sprintf("%s/%s", target, user.ID.Hex()),
 		}
 		resp, err := app.Test(testReq.NewRequestWithHeader())
 		if err != nil {
@@ -240,9 +238,9 @@ func TestHandleGetUser(t *testing.T) {
 }
 
 func TestHandlePutUser(t *testing.T) {
-	tdb, app, handlers, validator := setup(db, false)
+	tdb, app := setup(db, false, configs)
 
-	app.Put("/:id", mid.WithValidation(validator, UpdateUserRequestSchema), handlers.HandlePutUser)
+	const target = "/v1/users"
 
 	t.Run("Validations", func(t *testing.T) {
 		t.Parallel()
@@ -306,7 +304,7 @@ func TestHandlePutUser(t *testing.T) {
 			b, _ := json.Marshal(tc.input)
 			testReq := utils.TestRequest{
 				Method:  "PUT",
-				Target:  fmt.Sprintf("/%s", tc.id),
+				Target:  fmt.Sprintf("%s/%s", target, tc.id),
 				Payload: bytes.NewReader(b),
 			}
 			resp, err := app.Test(testReq.NewRequestWithHeader())
@@ -342,7 +340,7 @@ func TestHandlePutUser(t *testing.T) {
 		b, _ := json.Marshal(params)
 		testReq := utils.TestRequest{
 			Method:  "PUT",
-			Target:  fmt.Sprintf("/%s", user.ID.Hex()),
+			Target:  fmt.Sprintf("%s/%s", target, user.ID.Hex()),
 			Payload: bytes.NewReader(b),
 		}
 		resp, err := app.Test(testReq.NewRequestWithHeader())
@@ -369,7 +367,7 @@ func TestHandlePutUser(t *testing.T) {
 		b, _ := json.Marshal(params)
 		testReq := utils.TestRequest{
 			Method:  "PUT",
-			Target:  fmt.Sprintf("/%s", obi),
+			Target:  fmt.Sprintf("%s/%s", target, obi),
 			Payload: bytes.NewReader(b),
 		}
 		res, err := app.Test(testReq.NewRequestWithHeader())

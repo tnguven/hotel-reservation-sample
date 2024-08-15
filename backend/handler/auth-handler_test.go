@@ -9,15 +9,13 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/tnguven/hotel-reservation-app/db/fixtures"
-	mid "github.com/tnguven/hotel-reservation-app/handler/middleware"
 	"github.com/tnguven/hotel-reservation-app/types"
 	"github.com/tnguven/hotel-reservation-app/utils"
 )
 
 func TestHandleAuthenticate(t *testing.T) {
-	tdb, app, handlers, v := setup(db, false)
-
-	app.Post("/", mid.WithValidation(v, AuthRequestSchema), handlers.HandleAuthenticate(configs))
+	tdb, app := setup(db, false, configs)
+	const target = "/v1/auth"
 
 	t.Run("Validations", func(t *testing.T) {
 		invalidEmail := &types.AuthParams{
@@ -64,7 +62,7 @@ func TestHandleAuthenticate(t *testing.T) {
 			b, _ := json.Marshal(test.input)
 			testReq := utils.TestRequest{
 				Method:  "POST",
-				Target:  "/",
+				Target:  target,
 				Payload: bytes.NewReader(b),
 			}
 			req := testReq.NewRequestWithHeader()
@@ -99,7 +97,7 @@ func TestHandleAuthenticate(t *testing.T) {
 		b, _ := json.Marshal(params)
 		testReq := utils.TestRequest{
 			Method:  "POST",
-			Target:  "/",
+			Target:  target,
 			Payload: bytes.NewReader(b),
 		}
 		req := testReq.NewRequestWithHeader()
@@ -134,7 +132,7 @@ func TestHandleAuthenticate(t *testing.T) {
 		b, _ := json.Marshal(params)
 		testReq := utils.TestRequest{
 			Method:  "POST",
-			Target:  "/",
+			Target:  target,
 			Payload: bytes.NewReader(b),
 		}
 		req := testReq.NewRequestWithHeader()
@@ -163,9 +161,8 @@ func TestHandleAuthenticate(t *testing.T) {
 }
 
 func TestHandleSignin(t *testing.T) {
-	_, app, handlers, v := setup(db, false)
-
-	app.Post("/", mid.WithValidation(v, InsertUserRequestSchema), handlers.HandleSignIn)
+	_, app := setup(db, false, configs)
+	const target = "/v1/auth/signin"
 
 	t.Run("validate singin inputs", func(t *testing.T) {
 		t.Parallel()
@@ -250,7 +247,7 @@ func TestHandleSignin(t *testing.T) {
 			b, _ := json.Marshal(tc.input)
 			testReq := utils.TestRequest{
 				Method:  "POST",
-				Target:  "/",
+				Target:  target,
 				Payload: bytes.NewReader(b),
 			}
 			resp, err := app.Test(testReq.NewRequestWithHeader())
@@ -287,7 +284,7 @@ func TestHandleSignin(t *testing.T) {
 		b, _ := json.Marshal(params)
 		testReq := utils.TestRequest{
 			Method:  "POST",
-			Target:  "/",
+			Target:  target,
 			Payload: bytes.NewReader(b),
 		}
 		res, err := app.Test(testReq.NewRequestWithHeader())
@@ -325,7 +322,7 @@ func TestHandleSignin(t *testing.T) {
 		b, _ := json.Marshal(params)
 		testReq := utils.TestRequest{
 			Method:  "POST",
-			Target:  "/",
+			Target:  target,
 			Payload: bytes.NewReader(b),
 		}
 		res, err := app.Test(testReq.NewRequestWithHeader())
