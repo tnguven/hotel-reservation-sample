@@ -22,8 +22,6 @@ func New(withLog bool) *fiber.App {
 				return c.Status(fiber.StatusBadRequest).JSON(utils.NewValidatorError(validationErrors))
 			}
 
-			fmt.Println(err)
-
 			if fmt.Sprint(err) == "forbidden" {
 				return c.Status(fiber.StatusForbidden).JSON(utils.AccessForbidden())
 			}
