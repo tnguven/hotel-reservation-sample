@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func getMongoClient(ctx context.Context, config config.Configs) *mongo.Client {
+func getMongoClient(ctx context.Context, config *config.Configs) *mongo.Client {
 	clientOpts := options.Client().ApplyURI(config.DbURI)
 
 	if config.DbUserName != "" && config.DbPassword != "" {
@@ -111,7 +111,7 @@ func createUsersIndexes(ctx context.Context, db *mongo.Database, wg *sync.WaitGr
 	log.Println("Created index users.email fields")
 }
 
-func New(ctx context.Context, config config.Configs) (*mongo.Client, *mongo.Database) {
+func New(ctx context.Context, config *config.Configs) (*mongo.Client, *mongo.Database) {
 	client := getMongoClient(ctx, config)
 	return client, client.Database(config.DbName)
 }

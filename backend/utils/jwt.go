@@ -1,22 +1,20 @@
 package utils
 
 import (
-	"os"
 	"time"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/tnguven/hotel-reservation-app/config"
 )
 
-var secretString = []byte(os.Getenv("JWT_SECRET"))
-
-func GenerateJWT(id string, isAdmin bool) string {
+func GenerateJWT(id string, isAdmin bool, configs *config.Configs) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":      id,
-		"exp":     time.Now().Add(time.Hour * 10).Unix(),
+		"exp":     time.Now().Add(time.Hour * time.Duration(configs.TokenExpHour)).Unix(),
 		"isAdmin": isAdmin,
 	})
-	t, err := token.SignedString(secretString)
+	t, err := token.SignedString([]byte(configs.JWTSecret))
 	if err != nil {
 		log.Error("failed to sign token with secret")
 	}

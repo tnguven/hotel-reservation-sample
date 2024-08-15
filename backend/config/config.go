@@ -10,39 +10,51 @@ const (
 )
 
 type Configs struct {
-	DbURI       string
-	DbName      string
-	DbUserName  string
-	DbPassword  string
-	CreateIndex bool
+	DbURI        string
+	DbName       string
+	DbUserName   string
+	DbPassword   string
+	CreateIndex  bool
+	JWTSecret    string
+	TokenExpHour int64
 }
 
-func (conf Configs) WithDbURI(dbURI string) Configs {
+func (conf *Configs) WithDbURI(dbURI string) *Configs {
 	conf.DbURI = dbURI
 	return conf
 }
 
-func (conf Configs) WithDbName(dbName string) Configs {
+func (conf *Configs) WithDbName(dbName string) *Configs {
 	conf.DbName = dbName
 	return conf
 }
 
-func (conf Configs) WithDbUserName(username string) Configs {
+func (conf *Configs) WithDbUserName(username string) *Configs {
 	conf.DbUserName = username
 	return conf
 }
 
-func (conf Configs) WithDbPassword(password string) Configs {
+func (conf *Configs) WithDbPassword(password string) *Configs {
 	conf.DbPassword = password
 	return conf
 }
 
-func (conf Configs) WithDbCreateIndex(withIndex bool) Configs {
+func (conf *Configs) WithDbCreateIndex(withIndex bool) *Configs {
 	conf.CreateIndex = withIndex
 	return conf
 }
 
-func (conf Configs) Validate() Configs {
+func (conf *Configs) WithJWTSecret(secret string) *Configs {
+	conf.JWTSecret = secret
+	return conf
+}
+
+func (conf *Configs) WithTokenExpirationHours(hour int64) *Configs {
+	conf.TokenExpHour = hour
+	return conf
+}
+
+func (conf *Configs) Validate() *Configs {
 	if conf.DbName == "" {
 		log.Fatal(errors.New("missing database name"))
 	}
@@ -55,7 +67,9 @@ func (conf Configs) Validate() Configs {
 
 func New() *Configs {
 	return &Configs{
-		DbURI:       dbUri,
-		CreateIndex: false,
+		DbURI:        dbUri,
+		CreateIndex:  false,
+		JWTSecret:    "top_secret",
+		TokenExpHour: 72,
 	}
 }

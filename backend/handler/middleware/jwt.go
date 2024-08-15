@@ -2,21 +2,21 @@ package middleware
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/tnguven/hotel-reservation-app/config"
 	"github.com/tnguven/hotel-reservation-app/store"
 )
 
-func JWTAuthentication(userStore store.UserStore) fiber.Handler {
+func JWTAuthentication(userStore store.UserStore, configs *config.Configs) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		token, ok := c.GetReqHeaders()["X-Api-Token"]
 		if !ok {
 			return fmt.Errorf("unauthorized")
 		}
 
-		claims, err := validateToken(token[0])
+		claims, err := validateToken(token[0], configs.JWTSecret)
 		if err != nil {
 			fmt.Println(token)
 			return fmt.Errorf("token is invalid")
@@ -32,16 +32,14 @@ func JWTAuthentication(userStore store.UserStore) fiber.Handler {
 
 		return c.Next()
 	}
-
 }
 
-func validateToken(tokenStr string) (jwt.MapClaims, error) {
+func validateToken(tokenStr string, secret string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			fmt.Println("invalid signing method", t.Header["alg"])
 			return nil, fmt.Errorf("unauthorized")
 		}
-		secret := os.Getenv("JWT_SECRET")
 		return []byte(secret), nil
 	})
 	if err != nil {

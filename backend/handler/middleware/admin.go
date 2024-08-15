@@ -9,12 +9,8 @@ import (
 
 func WithAdminAuth(c *fiber.Ctx) error {
 	user, ok := c.Context().UserValue("user").(*types.User)
-	if !ok {
-		return fmt.Errorf("no permission")
-	}
-
-	if !user.IsAdmin {
-		return fmt.Errorf("no permission")
+	if !ok || !user.IsAdmin {
+		return fmt.Errorf("forbidden")
 	}
 
 	return c.Next()

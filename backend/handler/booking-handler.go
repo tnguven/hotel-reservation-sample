@@ -4,19 +4,30 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/tnguven/hotel-reservation-app/types"
 )
 
-// TODO: this needs to be admin authorized
-func (h *Handler) HandleGetBookings(c *fiber.Ctx) error {
-	bookings, err := h.bookingStore.GetBookings(c.Context())
+func (h *Handler) HandleGetBookingsAsUser(c *fiber.Ctx) error {
+	user, _ := c.Context().UserValue("user").(*types.User)
+	bookings, err := h.bookingStore.GetBookingsAsUser(c.Context(), user)
+
 	if err != nil {
 		return err
 	}
 
-	return c.Status(fiber.StatusFound).JSON(bookings)
+	return c.Status(fiber.StatusOK).JSON(bookings)
 }
 
-// TODO: this needs to be user authorized
+func (h *Handler) HandleGetBookingsAsAdmin(c *fiber.Ctx) error {
+	bookings, err := h.bookingStore.GetBookingsAsAdmin(c.Context())
+
+	if err != nil {
+		return err
+	}
+
+	return c.Status(fiber.StatusOK).JSON(bookings)
+}
+
 func (h *Handler) HandleGetBooking(c *fiber.Ctx) error {
 	bookingID := c.Params("bookingID")
 

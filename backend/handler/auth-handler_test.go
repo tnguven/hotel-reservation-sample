@@ -15,9 +15,9 @@ import (
 )
 
 func TestHandleAuthenticate(t *testing.T) {
-	tdb, app, handlers, v := Setup(db, false)
+	tdb, app, handlers, v := setup(db, false)
 
-	app.Post("/", mid.WithValidation(v, AuthRequestSchema), handlers.HandleAuthenticate)
+	app.Post("/", mid.WithValidation(v, AuthRequestSchema), handlers.HandleAuthenticate(configs))
 
 	t.Run("Validations", func(t *testing.T) {
 		invalidEmail := &types.AuthParams{
@@ -90,7 +90,7 @@ func TestHandleAuthenticate(t *testing.T) {
 		}
 	})
 
-	t.Run("authorized", func(t *testing.T) {
+	t.Run("success_with_correct_password", func(t *testing.T) {
 		user := fixtures.AddUser(*tdb.Store, "auth", "success", false)
 		params := types.AuthParams{
 			Email:    "auth_success@test.com",
@@ -125,7 +125,7 @@ func TestHandleAuthenticate(t *testing.T) {
 		}
 	})
 
-	t.Run("unauthorized", func(t *testing.T) {
+	t.Run("failure_with_wrong_password", func(t *testing.T) {
 		fixtures.AddUser(*tdb.Store, "unAuth", "user", false)
 		params := types.AuthParams{
 			Email:    "unAuth_user@test.com",
@@ -163,7 +163,7 @@ func TestHandleAuthenticate(t *testing.T) {
 }
 
 func TestHandleSignin(t *testing.T) {
-	_, app, handlers, v := Setup(db, false)
+	_, app, handlers, v := setup(db, false)
 
 	app.Post("/", mid.WithValidation(v, InsertUserRequestSchema), handlers.HandleSignIn)
 

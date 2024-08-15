@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -18,6 +20,12 @@ func New(withLog bool) *fiber.App {
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			if validationErrors, ok := err.(validator.ValidationErrors); ok {
 				return c.Status(fiber.StatusBadRequest).JSON(utils.NewValidatorError(validationErrors))
+			}
+
+			fmt.Println(err)
+
+			if fmt.Sprint(err) == "forbidden" {
+				return c.Status(fiber.StatusForbidden).JSON(utils.AccessForbidden())
 			}
 
 			return c.JSON(ErrorResponse{Error: err.Error()})

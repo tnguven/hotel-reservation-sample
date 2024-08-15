@@ -19,8 +19,7 @@ const (
 )
 
 func TestPostUser(t *testing.T) {
-	_, app, handlers, validator := Setup(db, false)
-
+	_, app, handlers, validator := setup(db, false)
 	app.Post("/", mid.WithValidation(validator, InsertUserRequestSchema), handlers.HandlePostUser)
 
 	t.Run("Validations", func(t *testing.T) {
@@ -199,7 +198,7 @@ func TestPostUser(t *testing.T) {
 }
 
 func TestHandleGetUser(t *testing.T) {
-	tdb, app, handlers, _ := Setup(db, false)
+	tdb, app, handlers, _ := setup(db, false)
 
 	var (
 		firstName = "get"
@@ -241,7 +240,7 @@ func TestHandleGetUser(t *testing.T) {
 }
 
 func TestHandlePutUser(t *testing.T) {
-	tdb, app, handlers, validator := Setup(db, false)
+	tdb, app, handlers, validator := setup(db, false)
 
 	app.Put("/:id", mid.WithValidation(validator, UpdateUserRequestSchema), handlers.HandlePutUser)
 

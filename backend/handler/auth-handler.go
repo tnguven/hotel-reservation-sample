@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/tnguven/hotel-reservation-app/config"
 	"github.com/tnguven/hotel-reservation-app/types"
 	"github.com/tnguven/hotel-reservation-app/utils"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,30 +22,32 @@ func invalidCredResp(c *fiber.Ctx) error {
 	})
 }
 
-func (h *Handler) HandleAuthenticate(c *fiber.Ctx) error {
-	var authParams types.AuthParams
-	if err := c.BodyParser(&authParams); err != nil {
-		return err
-	}
+func (h *Handler) HandleAuthenticate(configs *config.Configs) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var authParams types.AuthParams
+		if err := c.BodyParser(&authParams); err != nil {
+			return err
+		}
 
-	user, err := h.userStore.GetUserByEmail(c.Context(), authParams.Email)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
+		user, err := h.userStore.GetUserByEmail(c.Context(), authParams.Email)
+		if err != nil {
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				return invalidCredResp(c)
+			}
+			return err
+		}
+
+		if !authParams.IsValidPassword(user.EncryptedPassword) {
 			return invalidCredResp(c)
 		}
-		return err
+
+		token := utils.GenerateJWT(user.ID.Hex(), user.IsAdmin, configs)
+
+		return c.JSON(&AuthResponse{
+			User:  user,
+			Token: token,
+		})
 	}
-
-	if !authParams.IsValidPassword(user.EncryptedPassword) {
-		return invalidCredResp(c)
-	}
-
-	token := utils.GenerateJWT(user.ID.Hex(), user.IsAdmin)
-
-	return c.JSON(&AuthResponse{
-		User:  user,
-		Token: token,
-	})
 }
 
 func (h *Handler) HandleSignIn(c *fiber.Ctx) error {

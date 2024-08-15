@@ -19,7 +19,8 @@ type BookingStore interface {
 	InsertBooking(context.Context, *types.BookingParam) (*types.Booking, error)
 	GetBookingsByRoomID(context.Context, *types.BookingParam) ([]*types.Booking, error)
 	GetBookingsByID(context.Context, string) (*types.Booking, error)
-	GetBookings(context.Context) ([]*types.Booking, error)
+	GetBookingsAsAdmin(context.Context) ([]*types.Booking, error)
+	GetBookingsAsUser(context.Context, *types.User) ([]*types.Booking, error)
 	CancelBookingByUserID(context.Context, string, primitive.ObjectID) error
 	CancelBookingByAdmin(context.Context, string) error
 }
@@ -92,8 +93,22 @@ func (ms *MongoBookingStore) GetBookingsByID(ctx context.Context, id string) (*t
 	return booking, nil
 }
 
-func (ms *MongoBookingStore) GetBookings(ctx context.Context) ([]*types.Booking, error) {
+func (ms *MongoBookingStore) GetBookingsAsAdmin(ctx context.Context) ([]*types.Booking, error) {
 	cur, err := ms.coll.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+
+	var bookings []*types.Booking
+	if err := cur.All(ctx, &bookings); err != nil {
+		return nil, err
+	}
+
+	return bookings, nil
+}
+
+func (ms *MongoBookingStore) GetBookingsAsUser(ctx context.Context, user *types.User) ([]*types.Booking, error) {
+	cur, err := ms.coll.Find(ctx, bson.M{"userID": user.ID})
 	if err != nil {
 		return nil, err
 	}

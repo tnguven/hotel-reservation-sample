@@ -3,8 +3,6 @@ package handler
 import (
 	"context"
 	"fmt"
-	"log"
-	"sync"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
@@ -12,6 +10,7 @@ import (
 	"github.com/tnguven/hotel-reservation-app/server"
 	"github.com/tnguven/hotel-reservation-app/store"
 	"github.com/tnguven/hotel-reservation-app/types"
+	"github.com/tnguven/hotel-reservation-app/utils"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -31,59 +30,36 @@ type TestDb struct {
 
 type CollectionType string
 
-const (
-	UsersColl    CollectionType = "users"
-	BookingsColl CollectionType = "bookings"
-	HotelsColl   CollectionType = "hotels"
-	RoomsColl    CollectionType = "rooms"
-)
-
-func (tdb *TestDb) tearDown(t *testing.T, collections []CollectionType) {
+func (tdb *TestDb) tearDown(t *testing.T) {
 	ctx := context.Background()
-	var wg sync.WaitGroup
-	errChan := make(chan error, len(collections))
-
-	for _, coll := range collections {
-		wg.Add(1)
-		switch coll {
-		case UsersColl:
-			go func() {
-				defer wg.Done()
-				if err := tdb.Store.User.Drop(ctx); err != nil {
-					errChan <- err
-					return
-				}
-			}()
-		case BookingsColl:
-			go func() {
-				defer wg.Done()
-				if err := tdb.Store.Hotel.Drop(ctx); err != nil {
-					errChan <- err
-					return
-				}
-			}()
-		case HotelsColl:
-			go func() {
-				defer wg.Done()
-				if err := tdb.Store.Room.Drop(ctx); err != nil {
-					errChan <- err
-					return
-				}
-			}()
-		case RoomsColl:
-			go func() {
-				defer wg.Done()
-				if err := tdb.Store.Booking.Drop(ctx); err != nil {
-					errChan <- err
-					return
-				}
-			}()
-		default:
-			log.Fatal("unknown collection")
-		}
+	errChan := make(chan error, 4)
+	events := []func(){
+		func() {
+			if err := tdb.Store.User.Drop(ctx); err != nil {
+				errChan <- err
+			}
+		},
+		func() {
+			if err := tdb.Store.Hotel.Drop(ctx); err != nil {
+				errChan <- err
+			}
+		},
+		func() {
+			if err := tdb.Store.Room.Drop(ctx); err != nil {
+				errChan <- err
+			}
+		},
+		func() {
+			if err := tdb.Store.Booking.Drop(ctx); err != nil {
+				errChan <- err
+			}
+		},
 	}
 
-	wg.Wait()
+	for event := range utils.Parallel(events) {
+		event()
+	}
+
 	close(errChan)
 
 	for err := range errChan {
@@ -93,7 +69,7 @@ func (tdb *TestDb) tearDown(t *testing.T, collections []CollectionType) {
 	}
 }
 
-func Setup(db *mongo.Database, withLog bool) (*TestDb, *fiber.App, *Handler, *mid.Validator) {
+func setup(db *mongo.Database, withLog bool) (*TestDb, *fiber.App, *Handler, *mid.Validator) {
 	hotelStore := store.NewMongoHotelStore(db)
 	roomStore := store.NewMongoRoomStore(db, hotelStore)
 	bookingStore := store.NewMongoBookingStore(db, roomStore)

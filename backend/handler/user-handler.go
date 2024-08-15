@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/tnguven/hotel-reservation-app/types"
@@ -12,9 +11,7 @@ import (
 
 func (h *Handler) HandleGetUser(c *fiber.Ctx) error {
 	id := c.Params("id")
-	fmt.Println("INNERRR", id)
 	user, err := h.userStore.GetByID(c.Context(), id)
-	fmt.Println("INNERRR user", user)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return c.Status(fiber.StatusNotFound).JSON(utils.NotFound())

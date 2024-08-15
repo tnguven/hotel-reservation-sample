@@ -29,13 +29,11 @@ func main() {
 		Validate()
 
 	ctx := context.Background()
-
 	_, database := db.New(ctx, configs)
 
-	withLog := true
-	route := server.New(withLog)
-
 	var (
+		withLog      = true
+		route        = server.New(withLog)
 		userStore    = store.NewMongoUserStore(database)
 		hotelStore   = store.NewMongoHotelStore(database)
 		roomStore    = store.NewMongoRoomStore(database, hotelStore) // TODO refactor this shenanigan
@@ -49,7 +47,7 @@ func main() {
 		Booking: bookingStore,
 	})
 
-	handlers.Register(route)
+	handlers.Register(route, configs)
 
 	log.Fatal(route.Listen(":5000"))
 }
