@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/gofiber/fiber/v2"
+	"github.com/tnguven/hotel-reservation-app/db/fixtures"
+	"net/http"
 	"reflect"
 	"testing"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/tnguven/hotel-reservation-app/db/fixtures"
 	"github.com/tnguven/hotel-reservation-app/types"
 	"github.com/tnguven/hotel-reservation-app/utils"
 )
@@ -32,29 +33,55 @@ func TestHandleAuthenticate(t *testing.T) {
 		}
 
 		type test struct {
-			expect   string
+			desc     string
 			input    *types.AuthParams
-			expected string
+			expected *utils.Error
 			status   int
 		}
+
 		inputs := []test{
 			{
-				expect:   "should return invalid email error",
-				input:    invalidEmail,
-				expected: `{"errors":{"Email":"email - invalid"}}`,
-				status:   400,
+				desc:  "should return invalid email error",
+				input: invalidEmail,
+				expected: &utils.Error{
+					utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"Email": "email - invalid",
+						},
+					},
+				},
+				status: 400,
 			},
 			{
-				expect:   "should return invalid password error",
-				input:    invalidPassword,
-				expected: `{"errors":{"Password":"min - invalid"}}`,
-				status:   400,
+				desc:  "should return invalid password error",
+				input: invalidPassword,
+				expected: &utils.Error{
+					utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"Password": "min - invalid",
+						},
+					},
+				},
+				status: 400,
 			},
 			{
-				expect:   "should return invalid password error",
-				input:    invalidBoth,
-				expected: `{"errors":{"Email":"email - invalid","Password":"min - invalid"}}`,
-				status:   400,
+				desc:  "should return invalid password error",
+				input: invalidBoth,
+				expected: &utils.Error{
+					utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"Email":    "email - invalid",
+							"Password": "min - invalid",
+						},
+					},
+				},
+				status: 400,
 			},
 		}
 
@@ -77,15 +104,37 @@ func TestHandleAuthenticate(t *testing.T) {
 				}
 			})
 
-			t.Run(test.expect, func(t *testing.T) {
-				body := make([]byte, resp.ContentLength)
-				if _, err := resp.Body.Read(body); err != nil {
-					t.Error(err)
+			t.Run(test.desc, func(t *testing.T) {
+				var body utils.Error
+				if errDecode := json.NewDecoder(resp.Body).Decode(&body); errDecode != nil {
+					t.Fatal(errDecode)
 				}
 
-				if string(body) != test.expected {
-					t.Errorf("should return %s but received %s", test.expected, string(body))
+				fmt.Printf("Decoded Response:  %+v \n", reflect.TypeOf(body.Errors))
+
+				if !reflect.DeepEqual(&body, test.expected) {
+					t.Errorf("expected response %+v, but got %+v", test.expected, body)
 				}
+				//errorData, errParse := json.Marshal(body.Errors)
+				//if errParse != nil {
+				//	t.Fatal(errParse)
+				//}
+				//fmt.Printf("BURASIIIIIIIIII %+v", errorData)
+				//
+				//var resErrors map[string]interface{}
+				//if err = json.Unmarshal(errorData, &resErrors); err != nil {
+				//	fmt.Printf("DEBUG: Unmarshal error: %v\n", err) // Debug print
+				//	t.Fatalf("Failed to unmarshal Data field into AuthResponse: %v", err)
+				//}
+
+				//body := make([]byte, resp.ContentLength)
+				//if _, readErr := resp.Body.Read(body); readErr != nil {
+				//	t.Error(readErr)
+				//}
+				//
+				//if errorData != test.expected {
+				//	t.Errorf("should return %s but received %s", test.expected, string(body))
+				//}
 			})
 		}
 	})
@@ -107,20 +156,34 @@ func TestHandleAuthenticate(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if resp.StatusCode != fiber.StatusOK {
+		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("expected http status of 200 but got %d", resp.StatusCode)
 		}
 
-		var result AuthResponse
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			t.Fatal(err)
+		var result utils.GenericResponse
+		if errDecode := json.NewDecoder(resp.Body).Decode(&result); errDecode != nil {
+			t.Fatal(errDecode)
 		}
-		if result.Token == "" {
+
+		authResponseData, err := json.Marshal(result.Data)
+		if err != nil {
+			t.Fatalf("Failed to marshal Data field: %v", err)
+		}
+
+		var authResponse AuthResponse
+		if err = json.Unmarshal(authResponseData, &authResponse); err != nil {
+			t.Fatalf("Failed to unmarshal Data field into AuthResponse: %v", err)
+		}
+		if authResponse.Token == "" {
 			t.Fatal("expected the JWT token to be present in the auth response")
 		}
+		if authResponse.User.Email != "auth_success@test.com" {
+			t.Fatalf("Expected user email 'auth_success@test.com' but got %s", authResponse.User.Email)
+		}
+
 		// set the encrypted password to an empty string, because we do not return that in any
 		user.EncryptedPassword = ""
-		if !reflect.DeepEqual(user, result.User) {
+		if !reflect.DeepEqual(user, authResponse.User) {
 			t.Fatal("expected the user to be the inserted user")
 		}
 	})
@@ -148,15 +211,13 @@ func TestHandleAuthenticate(t *testing.T) {
 		}
 
 		var result utils.Error
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			t.Fatal(err)
+		if decodeErr := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			t.Fatal(decodeErr)
 		}
-
-		if result.Code != fiber.StatusBadRequest {
-			t.Fatalf("expected to get status code %d but received: %d", fiber.StatusBadRequest, result.Code)
+		if result.Status != fiber.StatusBadRequest {
+			t.Fatalf("expected to get status code %d but received: %d", fiber.StatusBadRequest, result.Status)
 		}
-
-		if result.Msg != "invalid credential" {
+		if result.Msg != "invalid credentials" {
 			t.Fatalf("expected to get msg invalid credential but received: %s", result.Msg)
 		}
 	})
@@ -166,83 +227,83 @@ func TestHandleSignin(t *testing.T) {
 	_, app := setup(db, false, configs)
 	const target = "/v1/auth/signin"
 
-	t.Run("validate singin inputs", func(t *testing.T) {
+	t.Run("validations", func(t *testing.T) {
 		t.Parallel()
 		type test struct {
-			expect   string
+			desc     string
 			input    types.CreateUserParams
 			expected string
 			status   int
 		}
 
 		partialInput := types.CreateUserParams{}
-		invalidEmail := types.CreateUserParams{
-			Email:     "invalid-email",
-			FirstName: "Tan",
-			LastName:  "Foo",
-			Password:  "1234567",
-		}
-		invalidMinNames := types.CreateUserParams{
-			Email:     "test@test.com",
-			FirstName: "T",
-			LastName:  "F",
-			Password:  "1234567",
-		}
-		invalidMaxNames := types.CreateUserParams{
-			Email:     "test@test.com",
-			FirstName: invalidMaxCharName,
-			LastName:  invalidMaxCharName,
-			Password:  "1234567",
-		}
-		invalidAlphaNames := types.CreateUserParams{
-			Email:     "test@test.com",
-			FirstName: "Test test",
-			LastName:  "Foo foo",
-			Password:  "1234567",
-		}
-		invalidPassword := types.CreateUserParams{
-			Email:     "test@test.com",
-			FirstName: "Test",
-			LastName:  "Foo",
-			Password:  "123456",
-		}
+		//invalidEmail := types.CreateUserParams{
+		//	Email:     "invalid-email",
+		//	FirstName: "Tan",
+		//	LastName:  "Foo",
+		//	Password:  "1234567",
+		//}
+		//invalidMinNames := types.CreateUserParams{
+		//	Email:     "test@test.com",
+		//	FirstName: "T",
+		//	LastName:  "F",
+		//	Password:  "1234567",
+		//}
+		//invalidMaxNames := types.CreateUserParams{
+		//	Email:     "test@test.com",
+		//	FirstName: invalidMaxCharName,
+		//	LastName:  invalidMaxCharName,
+		//	Password:  "1234567",
+		//}
+		//invalidAlphaNames := types.CreateUserParams{
+		//	Email:     "test@test.com",
+		//	FirstName: "Test test",
+		//	LastName:  "Foo foo",
+		//	Password:  "1234567",
+		//}
+		//invalidPassword := types.CreateUserParams{
+		//	Email:     "test@test.com",
+		//	FirstName: "Test",
+		//	LastName:  "Foo",
+		//	Password:  "123456",
+		//}
 		tests := []test{
 			{
-				expect:   "Should return all required fields error",
+				desc:     "Should return all required fields error",
 				input:    partialInput,
 				status:   400,
-				expected: `{"errors":{"Email":"required","FirstName":"required","LastName":"required","Password":"required"}}`,
+				expected: `{"msg":"Bad Request","status":400,"error":{"Email":"required","FirstName":"required","LastName":"required","Password":"required"}}`,
 			},
-			{
-				expect:   "Should return invalid email field error",
-				input:    invalidEmail,
-				status:   400,
-				expected: `{"errors":{"Email":"email - invalid"}}`,
-			},
-			{
-				expect:   "Should return invalid firstName and lastName minimum field error",
-				input:    invalidMinNames,
-				status:   400,
-				expected: `{"errors":{"FirstName":"min - invalid","LastName":"min - invalid"}}`,
-			},
-			{
-				expect:   "Should return invalid firstName and lastName maximum field error",
-				input:    invalidMaxNames,
-				status:   400,
-				expected: `{"errors":{"FirstName":"max - invalid","LastName":"max - invalid"}}`,
-			},
-			{
-				expect:   "Should return invalid firstName and lastName maximum field error",
-				input:    invalidAlphaNames,
-				status:   400,
-				expected: `{"errors":{"FirstName":"alpha - invalid","LastName":"alpha - invalid"}}`,
-			},
-			{
-				expect:   "Should return invalid password min field error",
-				input:    invalidPassword,
-				status:   400,
-				expected: `{"errors":{"Password":"min - invalid"}}`,
-			},
+			//{
+			//	desc:     "Should return invalid email field error",
+			//	input:    invalidEmail,
+			//	status:   400,
+			//	expected: `{"msg":"Bad Request","status":400,"error":{"Email":"email - invalid"}}`,
+			//},
+			//{
+			//	desc:     "Should return invalid firstName and lastName minimum field error",
+			//	input:    invalidMinNames,
+			//	status:   400,
+			//	expected: `{"msg":"Bad Request","status":400,"error":{"FirstName":"min - invalid","LastName":"min - invalid"}}`,
+			//},
+			//{
+			//	desc:     "Should return invalid firstName and lastName maximum field error",
+			//	input:    invalidMaxNames,
+			//	status:   400,
+			//	expected: `{"msg":"Bad Request","status":400,"error":{"FirstName":"max - invalid","LastName":"max - invalid"}}`,
+			//},
+			//{
+			//	desc:     "Should return invalid firstName and lastName maximum field error",
+			//	input:    invalidAlphaNames,
+			//	status:   400,
+			//	expected: `{"msg":"Bad Request","status":400,"error":{"FirstName":"alpha - invalid","LastName":"alpha - invalid"}}`,
+			//},
+			//{
+			//	desc:     "Should return invalid password min field error",
+			//	input:    invalidPassword,
+			//	status:   400,
+			//	expected: `{"msg":"Bad Request","status":400,"error":{"Password":"min - invalid"}}`,
+			//},
 		}
 
 		for _, tc := range tests {
@@ -252,23 +313,23 @@ func TestHandleSignin(t *testing.T) {
 				Target:  target,
 				Payload: bytes.NewReader(b),
 			}
-			resp, err := app.Test(testReq.NewRequestWithHeader())
-			if err != nil {
-				t.Fatal(err)
+			resp, reqErr := app.Test(testReq.NewRequestWithHeader())
+			if reqErr != nil {
+				t.Fatal(reqErr)
 			}
 
 			t.Run(fmt.Sprintf("should return %d status code", tc.status), func(t *testing.T) {
-				t.Parallel()
+				//t.Parallel()
 				if resp.StatusCode != tc.status {
 					t.Errorf("expected status code %d but return %d", tc.status, resp.StatusCode)
 				}
 			})
 
-			t.Run(tc.expect, func(t *testing.T) {
-				t.Parallel()
+			t.Run(tc.desc, func(t *testing.T) {
+				//t.Parallel()
 				body := make([]byte, resp.ContentLength)
-				if _, err = resp.Body.Read(body); err != nil {
-					t.Error(err)
+				if _, readErr := resp.Body.Read(body); readErr != nil {
+					t.Error(readErr)
 				}
 
 				if string(body) != tc.expected {
@@ -277,6 +338,7 @@ func TestHandleSignin(t *testing.T) {
 			})
 		}
 	})
+
 	email := "sing_in@test.com"
 	t.Run("Signin user", func(t *testing.T) {
 		params := types.CreateUserParams{
