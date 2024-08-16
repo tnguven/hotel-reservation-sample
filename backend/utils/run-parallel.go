@@ -9,6 +9,7 @@ func Parallel[E any](events []E) func(func(E) bool) {
 	return func(yield func(E) bool) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
+
 		var wg sync.WaitGroup
 		wg.Add(len(events))
 

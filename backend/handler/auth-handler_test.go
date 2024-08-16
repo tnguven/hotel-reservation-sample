@@ -79,7 +79,9 @@ func TestHandleAuthenticate(t *testing.T) {
 
 			t.Run(test.expect, func(t *testing.T) {
 				body := make([]byte, resp.ContentLength)
-				resp.Body.Read(body)
+				if _, err := resp.Body.Read(body); err != nil {
+					t.Error(err)
+				}
 
 				if string(body) != test.expected {
 					t.Errorf("should return %s but received %s", test.expected, string(body))
@@ -145,13 +147,13 @@ func TestHandleAuthenticate(t *testing.T) {
 			t.Fatalf("expected http status of 400 but got %d", resp.StatusCode)
 		}
 
-		var result genericResp
+		var result utils.Error
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 			t.Fatal(err)
 		}
 
-		if result.Type != "error" {
-			t.Fatalf("expected to get type error but received: %s", result.Type)
+		if result.Code != fiber.StatusBadRequest {
+			t.Fatalf("expected to get status code %d but received: %d", fiber.StatusBadRequest, result.Code)
 		}
 
 		if result.Msg != "invalid credential" {
@@ -252,7 +254,7 @@ func TestHandleSignin(t *testing.T) {
 			}
 			resp, err := app.Test(testReq.NewRequestWithHeader())
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 
 			t.Run(fmt.Sprintf("should return %d status code", tc.status), func(t *testing.T) {
@@ -265,7 +267,9 @@ func TestHandleSignin(t *testing.T) {
 			t.Run(tc.expect, func(t *testing.T) {
 				t.Parallel()
 				body := make([]byte, resp.ContentLength)
-				resp.Body.Read(body)
+				if _, err = resp.Body.Read(body); err != nil {
+					t.Error(err)
+				}
 
 				if string(body) != tc.expected {
 					t.Errorf("should return %s but received %s", tc.expected, string(body))
@@ -292,10 +296,11 @@ func TestHandleSignin(t *testing.T) {
 			t.Error(err)
 		}
 
-		var createdUser types.User
-
-		json.NewDecoder(res.Body).Decode(&createdUser)
-		if len(createdUser.ID) == 0 {
+		var createdUser *types.User
+		if err = json.NewDecoder(res.Body).Decode(createdUser); err != nil {
+			t.Fatal(err)
+		}
+		if len(createdUser.ID.Hex()) == 0 {
 			t.Errorf("expecting a user id to be set")
 		}
 		if len(createdUser.EncryptedPassword) > 0 {

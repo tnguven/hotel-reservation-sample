@@ -15,19 +15,19 @@ type ErrorResponse struct {
 func New(withLog bool) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			if utilsError, ok := err.(utils.Error); ok {
-				return c.Status(utilsError.Code).JSON(utilsError)
+			if response, ok := err.(utils.Error); ok {
+				return c.Status(response.Status).JSON(&response)
 			}
 
 			return c.Status(fiber.StatusInternalServerError).
-				JSON(utils.NewError(err, fiber.StatusInternalServerError))
+				JSON(utils.NewError(err, fiber.StatusInternalServerError, ""))
 		},
 	})
 
 	if withLog {
 		app.Use(etag.New())
 		app.Use(logger.New(logger.Config{
-			Format: "${pid} ${status} - ${method} ${path}​\n",
+			Format: "${pid} ${status} - ${method} ${path}\n",
 		}))
 	}
 

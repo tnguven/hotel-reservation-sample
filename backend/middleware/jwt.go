@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/gofiber/fiber/v2"
@@ -15,18 +14,18 @@ func JWTAuthentication(userStore store.UserStore, configs *config.Configs) fiber
 	return func(c *fiber.Ctx) error {
 		token, ok := c.GetReqHeaders()["X-Api-Token"]
 		if !ok {
-			return utils.UnauthorizeError()
+			return utils.UnauthorizedError()
 		}
 
 		claims, err := validateToken(token[0], configs.JWTSecret)
 		if err != nil {
-			return utils.UnauthorizeError()
+			return err
 		}
 
 		userID := claims["id"].(string)
 		user, err := userStore.GetByID(c.Context(), userID)
 		if err != nil {
-			return utils.UnauthorizeError()
+			return utils.UnauthorizedError()
 		}
 
 		c.Context().SetUserValue("user", user)
@@ -39,7 +38,7 @@ func validateToken(tokenStr string, secret string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			log.Println("invalid signing method", t.Header["alg"])
-			return nil, fmt.Errorf("unauthorized")
+			return nil, utils.UnauthorizedError()
 		}
 		return []byte(secret), nil
 	})
@@ -48,9 +47,8 @@ func validateToken(tokenStr string, secret string) (jwt.MapClaims, error) {
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
-
 	if !ok {
-		return nil, fmt.Errorf("unauthorize")
+		return nil, utils.UnauthorizedError()
 	}
 
 	return claims, nil

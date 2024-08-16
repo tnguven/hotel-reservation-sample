@@ -10,18 +10,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type genericResp struct {
-	Type string `json:"type"`
-	Msg  string `json:"msg"`
-}
-
-func invalidCredResp(c *fiber.Ctx) error {
-	return c.Status(fiber.StatusBadRequest).JSON(genericResp{
-		Type: "error",
-		Msg:  "invalid credential",
-	})
-}
-
 func (h *Handler) HandleAuthenticate(configs *config.Configs) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		var authParams types.AuthParams
@@ -32,20 +20,26 @@ func (h *Handler) HandleAuthenticate(configs *config.Configs) fiber.Handler {
 		user, err := h.userStore.GetUserByEmail(c.Context(), authParams.Email)
 		if err != nil {
 			if errors.Is(err, mongo.ErrNoDocuments) {
-				return invalidCredResp(c)
+				return utils.InvalidCredError()
 			}
-			return err
+			return utils.NewError(err, fiber.StatusInternalServerError, "")
 		}
 
 		if !authParams.IsValidPassword(user.EncryptedPassword) {
-			return invalidCredResp(c)
+			return utils.InvalidCredError()
 		}
 
-		token := utils.GenerateJWT(user.ID.Hex(), user.IsAdmin, configs)
+		token, err := utils.GenerateJWT(user.ID.Hex(), user.IsAdmin, configs)
+		if err != nil {
+			return utils.NewError(err, fiber.StatusInternalServerError, "")
+		}
 
-		return c.JSON(&AuthResponse{
-			User:  user,
-			Token: token,
+		return c.Status(fiber.StatusOK).JSON(&utils.GenericResponse{
+			Data: &AuthResponse{
+				User:  user,
+				Token: token,
+			},
+			Status: fiber.StatusOK,
 		})
 	}
 }
@@ -64,10 +58,13 @@ func (h *Handler) HandleSignIn(c *fiber.Ctx) error {
 	insertedUser, err := h.userStore.InsertUser(c.Context(), user)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "email already exist"})
+			return utils.ConflictError("email already exist")
 		}
 		return err
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(insertedUser)
+	return c.Status(fiber.StatusCreated).JSON(&utils.GenericResponse{
+		Data:   insertedUser,
+		Status: fiber.StatusCreated,
+	})
 }

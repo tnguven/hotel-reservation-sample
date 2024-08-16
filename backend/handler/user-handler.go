@@ -2,6 +2,9 @@ package handler
 
 import (
 	"errors"
+	"fmt"
+
+	"github.com/gofiber/fiber/v2/log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/tnguven/hotel-reservation-app/types"
@@ -16,10 +19,14 @@ func (h *Handler) HandleGetUser(c *fiber.Ctx) error {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return utils.NotFoundError()
 		}
-		return err
+		log.Errorf("HandleGetUser: error getting user: %v", err)
+		return utils.NewError(err, fiber.StatusInternalServerError, "Error getting user")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(user)
+	return c.Status(fiber.StatusOK).JSON(&utils.GenericResponse{
+		Data:   user,
+		Status: fiber.StatusOK,
+	})
 }
 
 func (h *Handler) HandleGetUsers(c *fiber.Ctx) error {
@@ -28,10 +35,14 @@ func (h *Handler) HandleGetUsers(c *fiber.Ctx) error {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return utils.NotFoundError()
 		}
-		return err
+		log.Errorf("HandleGetUsers: error getting users: %v", err)
+		return utils.NewError(err, fiber.StatusInternalServerError, "error getting users")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(users)
+	return c.Status(fiber.StatusOK).JSON(&utils.GenericResponse{
+		Data:   &users,
+		Status: fiber.StatusOK,
+	})
 }
 
 func (h *Handler) HandlePostUser(c *fiber.Ctx) error {
@@ -42,28 +53,39 @@ func (h *Handler) HandlePostUser(c *fiber.Ctx) error {
 
 	user, err := types.NewUserFromParams(params)
 	if err != nil {
-		return err
+		return utils.NewError(err, fiber.StatusInternalServerError, "")
 	}
 
 	insertedUser, err := h.userStore.InsertUser(c.Context(), user)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": "email already exist"})
+			return c.Status(fiber.StatusConflict).JSON(&utils.GenericResponse{
+				Msg:    "email already exist",
+				Status: fiber.StatusConflict,
+			})
 		}
-		return err
+		log.Errorf("HandlePostUser: error inserting user: %v", err)
+		return utils.NewError(err, fiber.StatusInternalServerError, "something went wrong")
 	}
 
-	return c.JSON(insertedUser)
+	return c.Status(fiber.StatusCreated).JSON(&utils.GenericResponse{
+		Data:   insertedUser,
+		Status: fiber.StatusCreated,
+	})
 }
 
 func (h *Handler) HandleDeleteUser(c *fiber.Ctx) error {
 	id := c.Params("id")
 
 	if err := h.userStore.DeleteUser(c.Context(), id); err != nil {
-		return err
+		log.Errorf("HandleDeleteUser: error deleting user: %v", err)
+		return utils.NewError(err, fiber.StatusInternalServerError, "error deleting user")
 	}
 
-	return c.JSON(fiber.Map{"deleted": id})
+	return c.Status(fiber.StatusOK).JSON(&utils.GenericResponse{
+		Msg:    fmt.Sprintf("User %s deleted", id),
+		Status: fiber.StatusOK,
+	})
 }
 
 func (h *Handler) HandlePutUser(c *fiber.Ctx) error {
@@ -71,14 +93,17 @@ func (h *Handler) HandlePutUser(c *fiber.Ctx) error {
 		id     = c.Params("id")
 		params *types.UpdateUserParams
 	)
-
 	if err := c.BodyParser(&params); err != nil {
-		return err
+		log.Errorf("HandlePutUser: error parsing params: %v", err)
+		return utils.NewError(err, fiber.StatusInternalServerError, "error parsing body")
 	}
-
 	if err := h.userStore.PutUser(c.Context(), params, id); err != nil {
-		return err
+		log.Errorf("HandlePutUser: error putting user: %v", err)
+		return utils.NewError(err, fiber.StatusInternalServerError, "error updating user")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"updated": id})
+	return c.Status(fiber.StatusOK).JSON(&utils.GenericResponse{
+		Msg:    fmt.Sprintf("User %v updated", id),
+		Status: fiber.StatusOK,
+	})
 }

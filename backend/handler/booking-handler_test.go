@@ -14,9 +14,6 @@ import (
 func TestHandleGetBookings(t *testing.T) {
 	tdb, app := setup(db, false, configs)
 
-	// app.Get("/admin", mid.JWTAuthentication(tdb.Store.User, configs), mid.WithAdminAuth, handlers.HandleGetBookingsAsAdmin)
-	// app.Get("/user", mid.JWTAuthentication(tdb.Store.User, configs), handlers.HandleGetBookingsAsUser)
-
 	var (
 		user  = fixtures.AddUser(*tdb.Store, "get", "booking", false)
 		hotel = fixtures.AddHotel(*tdb.Store, "bar hotel", "a", 4, nil)
@@ -27,10 +24,11 @@ func TestHandleGetBookings(t *testing.T) {
 	)
 
 	t.Run("restrict_for_non_admin_user", func(t *testing.T) {
+		token, _ := utils.GenerateJWT(user.ID.Hex(), user.IsAdmin, configs)
 		testReq := utils.TestRequest{
 			Method: "GET",
 			Target: "/v1/admin/bookings",
-			Token:  utils.GenerateJWT(user.ID.Hex(), user.IsAdmin, configs),
+			Token:  token,
 		}
 
 		resp, err := app.Test(testReq.NewRequestWithHeader())
@@ -47,11 +45,12 @@ func TestHandleGetBookings(t *testing.T) {
 		var (
 			admin = fixtures.AddUser(*tdb.Store, "admin", "booking", true)
 		)
+		token, _ := utils.GenerateJWT(admin.ID.Hex(), admin.IsAdmin, configs)
 
 		testReq := utils.TestRequest{
 			Method: "GET",
 			Target: "/v1/admin/bookings",
-			Token:  utils.GenerateJWT(admin.ID.Hex(), admin.IsAdmin, configs),
+			Token:  token,
 		}
 		resp, err := app.Test(testReq.NewRequestWithHeader())
 		if err != nil {
@@ -73,10 +72,11 @@ func TestHandleGetBookings(t *testing.T) {
 	})
 
 	t.Run("get_bookings as user", func(t *testing.T) {
+		token, _ := utils.GenerateJWT(user.ID.Hex(), user.IsAdmin, configs)
 		testReq := utils.TestRequest{
 			Method: "GET",
 			Target: "/v1/bookings",
-			Token:  utils.GenerateJWT(user.ID.Hex(), user.IsAdmin, configs),
+			Token:  token,
 		}
 
 		resp, err := app.Test(testReq.NewRequestWithHeader())
