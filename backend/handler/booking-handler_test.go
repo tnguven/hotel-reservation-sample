@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 	"time"
 
@@ -30,7 +31,6 @@ func TestHandleGetBookings(t *testing.T) {
 			Target: "/v1/admin/bookings",
 			Token:  token,
 		}
-
 		resp, err := app.Test(testReq.NewRequestWithHeader())
 		if err != nil {
 			t.Fatal(err)
@@ -41,12 +41,9 @@ func TestHandleGetBookings(t *testing.T) {
 		}
 	})
 
-	t.Run("no restriction_for_admin_user", func(t *testing.T) {
-		var (
-			admin = fixtures.AddUser(*tdb.Store, "admin", "booking", true)
-		)
+	t.Run("get_the_bookings_as_admin", func(t *testing.T) {
+		admin := fixtures.AddUser(*tdb.Store, "admin", "booking", true)
 		token, _ := utils.GenerateJWT(admin.ID.Hex(), admin.IsAdmin, configs)
-
 		testReq := utils.TestRequest{
 			Method: "GET",
 			Target: "/v1/admin/bookings",
@@ -57,17 +54,27 @@ func TestHandleGetBookings(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if resp.StatusCode != fiber.StatusOK {
+		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("expected 200 status code but received %d", resp.StatusCode)
 		}
 
-		var bookings []*types.Booking
-		if err := json.NewDecoder(resp.Body).Decode(&bookings); err != nil {
+		var response *utils.GenericResponse
+		if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			t.Fatal(err)
 		}
 
+		data, err := json.Marshal(response.Data)
+		if err != nil {
+			t.Fatalf("Failed to marshal Data field: %v", err)
+		}
+
+		var bookings []*types.Booking
+		if err = json.Unmarshal(data, &bookings); err != nil {
+			t.Fatalf("Failed to unmarshal Data field into AuthResponse: %v", err)
+		}
+
 		if len(bookings) == 0 {
-			t.Fatal("expected booking got nothing")
+			t.Fatal("expected booking but received nothing")
 		}
 	})
 
@@ -78,23 +85,31 @@ func TestHandleGetBookings(t *testing.T) {
 			Target: "/v1/bookings",
 			Token:  token,
 		}
-
 		resp, err := app.Test(testReq.NewRequestWithHeader())
 		if err != nil {
 			t.Fatal(err)
 		}
-
 		if resp.StatusCode != fiber.StatusOK {
 			t.Fatalf("expected 200 status code but received %d", resp.StatusCode)
 		}
 
-		var bookings []*types.Booking
-		if err := json.NewDecoder(resp.Body).Decode(&bookings); err != nil {
+		var response *utils.GenericResponse
+		if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			t.Fatal(err)
 		}
 
+		data, err := json.Marshal(response.Data)
+		if err != nil {
+			t.Fatalf("Failed to marshal Data field: %v", err)
+		}
+
+		var bookings []*types.Booking
+		if err = json.Unmarshal(data, &bookings); err != nil {
+			t.Fatalf("Failed to unmarshal Data field into AuthResponse: %v", err)
+		}
+
 		if len(bookings) == 0 {
-			t.Fatal("expected booking got nothing")
+			t.Fatal("expected booking but received nothing")
 		}
 	})
 }

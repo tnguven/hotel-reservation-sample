@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/tnguven/hotel-reservation-app/types"
@@ -21,7 +20,7 @@ type UserStore interface {
 	GetUsers(context.Context) ([]*types.User, error)
 	InsertUser(context.Context, *types.User) (*types.User, error)
 	DeleteUser(context.Context, string) error
-	PutUser(context.Context, *types.UpdateUserParams, string) error
+	PutUser(context.Context, *types.UpdateUserParams, string) (int64, error)
 }
 
 type MongoUserStore struct {
@@ -101,24 +100,20 @@ func (ms *MongoUserStore) DeleteUser(ctx context.Context, id string) error {
 	return nil
 }
 
-func (ms *MongoUserStore) PutUser(ctx context.Context, params *types.UpdateUserParams, id string) error {
+func (ms *MongoUserStore) PutUser(ctx context.Context, params *types.UpdateUserParams, id string) (int64, error) {
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	result, err := ms.coll.UpdateOne(ctx, bson.M{"_id": oid}, bson.D{{
 		Key: "$set", Value: params.ToBsonMap(),
 	}})
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	if result.MatchedCount == 0 {
-		return fmt.Errorf("no user found with id %s", id)
-	}
-
-	return nil
+	return result.MatchedCount, nil
 }
 
 func (ms *MongoUserStore) Drop(ctx context.Context) error {

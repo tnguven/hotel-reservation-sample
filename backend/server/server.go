@@ -15,7 +15,7 @@ type ErrorResponse struct {
 func New(withLog bool) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			if response, ok := err.(utils.Error); ok {
+			if response, ok := err.(*utils.Error); ok {
 				return c.Status(response.Status).JSON(&response)
 			}
 

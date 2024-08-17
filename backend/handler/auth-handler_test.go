@@ -8,6 +8,7 @@ import (
 	"github.com/tnguven/hotel-reservation-app/db/fixtures"
 	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/tnguven/hotel-reservation-app/types"
@@ -19,6 +20,7 @@ func TestHandleAuthenticate(t *testing.T) {
 	const target = "/v1/auth"
 
 	t.Run("Validations", func(t *testing.T) {
+		t.Parallel()
 		invalidEmail := &types.AuthParams{
 			Email:    "foo_bar@invalid",
 			Password: "foo_bar",
@@ -44,7 +46,7 @@ func TestHandleAuthenticate(t *testing.T) {
 				desc:  "should return invalid email error",
 				input: invalidEmail,
 				expected: &utils.Error{
-					utils.GenericResponse{
+					&utils.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -58,7 +60,7 @@ func TestHandleAuthenticate(t *testing.T) {
 				desc:  "should return invalid password error",
 				input: invalidPassword,
 				expected: &utils.Error{
-					utils.GenericResponse{
+					&utils.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -72,7 +74,7 @@ func TestHandleAuthenticate(t *testing.T) {
 				desc:  "should return invalid password error",
 				input: invalidBoth,
 				expected: &utils.Error{
-					utils.GenericResponse{
+					&utils.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -99,47 +101,28 @@ func TestHandleAuthenticate(t *testing.T) {
 			}
 
 			t.Run(fmt.Sprintf("should return %d status code", test.status), func(t *testing.T) {
+				t.Parallel()
 				if resp.StatusCode != test.status {
 					t.Errorf("expected status code %d but return %d", test.status, resp.StatusCode)
 				}
 			})
 
 			t.Run(test.desc, func(t *testing.T) {
+				t.Parallel()
 				var body utils.Error
 				if errDecode := json.NewDecoder(resp.Body).Decode(&body); errDecode != nil {
 					t.Fatal(errDecode)
 				}
 
-				fmt.Printf("Decoded Response:  %+v \n", reflect.TypeOf(body.Errors))
-
 				if !reflect.DeepEqual(&body, test.expected) {
 					t.Errorf("expected response %+v, but got %+v", test.expected, body)
 				}
-				//errorData, errParse := json.Marshal(body.Errors)
-				//if errParse != nil {
-				//	t.Fatal(errParse)
-				//}
-				//fmt.Printf("BURASIIIIIIIIII %+v", errorData)
-				//
-				//var resErrors map[string]interface{}
-				//if err = json.Unmarshal(errorData, &resErrors); err != nil {
-				//	fmt.Printf("DEBUG: Unmarshal error: %v\n", err) // Debug print
-				//	t.Fatalf("Failed to unmarshal Data field into AuthResponse: %v", err)
-				//}
-
-				//body := make([]byte, resp.ContentLength)
-				//if _, readErr := resp.Body.Read(body); readErr != nil {
-				//	t.Error(readErr)
-				//}
-				//
-				//if errorData != test.expected {
-				//	t.Errorf("should return %s but received %s", test.expected, string(body))
-				//}
 			})
 		}
 	})
 
 	t.Run("success_with_correct_password", func(t *testing.T) {
+		t.Parallel()
 		user := fixtures.AddUser(*tdb.Store, "auth", "success", false)
 		params := types.AuthParams{
 			Email:    "auth_success@test.com",
@@ -189,6 +172,7 @@ func TestHandleAuthenticate(t *testing.T) {
 	})
 
 	t.Run("failure_with_wrong_password", func(t *testing.T) {
+		t.Parallel()
 		fixtures.AddUser(*tdb.Store, "unAuth", "user", false)
 		params := types.AuthParams{
 			Email:    "unAuth_user@test.com",
@@ -224,86 +208,141 @@ func TestHandleAuthenticate(t *testing.T) {
 }
 
 func TestHandleSignin(t *testing.T) {
-	_, app := setup(db, false, configs)
+	tdb, app := setup(db, false, configs)
 	const target = "/v1/auth/signin"
+	invalidMaxCharName := strings.Repeat("a", 49)
 
 	t.Run("validations", func(t *testing.T) {
 		t.Parallel()
 		type test struct {
 			desc     string
-			input    types.CreateUserParams
-			expected string
+			input    *types.CreateUserParams
+			expected *utils.Error
 			status   int
 		}
 
-		partialInput := types.CreateUserParams{}
-		//invalidEmail := types.CreateUserParams{
-		//	Email:     "invalid-email",
-		//	FirstName: "Tan",
-		//	LastName:  "Foo",
-		//	Password:  "1234567",
-		//}
-		//invalidMinNames := types.CreateUserParams{
-		//	Email:     "test@test.com",
-		//	FirstName: "T",
-		//	LastName:  "F",
-		//	Password:  "1234567",
-		//}
-		//invalidMaxNames := types.CreateUserParams{
-		//	Email:     "test@test.com",
-		//	FirstName: invalidMaxCharName,
-		//	LastName:  invalidMaxCharName,
-		//	Password:  "1234567",
-		//}
-		//invalidAlphaNames := types.CreateUserParams{
-		//	Email:     "test@test.com",
-		//	FirstName: "Test test",
-		//	LastName:  "Foo foo",
-		//	Password:  "1234567",
-		//}
-		//invalidPassword := types.CreateUserParams{
-		//	Email:     "test@test.com",
-		//	FirstName: "Test",
-		//	LastName:  "Foo",
-		//	Password:  "123456",
-		//}
+		partialInput := &types.CreateUserParams{}
+		invalidEmail := &types.CreateUserParams{
+			Email:     "invalid-email",
+			FirstName: "Tan",
+			LastName:  "Foo",
+			Password:  "1234567",
+		}
+		invalidMinNames := &types.CreateUserParams{
+			Email:     "test@test.com",
+			FirstName: "T",
+			LastName:  "F",
+			Password:  "1234567",
+		}
+		invalidMaxNames := &types.CreateUserParams{
+			Email:     "test@test.com",
+			FirstName: invalidMaxCharName,
+			LastName:  invalidMaxCharName,
+			Password:  "1234567",
+		}
+		invalidAlphaNames := &types.CreateUserParams{
+			Email:     "test@test.com",
+			FirstName: "Test test",
+			LastName:  "Foo foo",
+			Password:  "1234567",
+		}
+		invalidPassword := &types.CreateUserParams{
+			Email:     "test@test.com",
+			FirstName: "Test",
+			LastName:  "Foo",
+			Password:  "123456",
+		}
 		tests := []test{
 			{
-				desc:     "Should return all required fields error",
-				input:    partialInput,
-				status:   400,
-				expected: `{"msg":"Bad Request","status":400,"error":{"Email":"required","FirstName":"required","LastName":"required","Password":"required"}}`,
+				desc:   "Should return all required fields error",
+				input:  partialInput,
+				status: 400,
+				expected: &utils.Error{
+					&utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"Email":     "required",
+							"FirstName": "required",
+							"LastName":  "required",
+							"Password":  "required",
+						},
+					},
+				},
 			},
-			//{
-			//	desc:     "Should return invalid email field error",
-			//	input:    invalidEmail,
-			//	status:   400,
-			//	expected: `{"msg":"Bad Request","status":400,"error":{"Email":"email - invalid"}}`,
-			//},
-			//{
-			//	desc:     "Should return invalid firstName and lastName minimum field error",
-			//	input:    invalidMinNames,
-			//	status:   400,
-			//	expected: `{"msg":"Bad Request","status":400,"error":{"FirstName":"min - invalid","LastName":"min - invalid"}}`,
-			//},
-			//{
-			//	desc:     "Should return invalid firstName and lastName maximum field error",
-			//	input:    invalidMaxNames,
-			//	status:   400,
-			//	expected: `{"msg":"Bad Request","status":400,"error":{"FirstName":"max - invalid","LastName":"max - invalid"}}`,
-			//},
-			//{
-			//	desc:     "Should return invalid firstName and lastName maximum field error",
-			//	input:    invalidAlphaNames,
-			//	status:   400,
-			//	expected: `{"msg":"Bad Request","status":400,"error":{"FirstName":"alpha - invalid","LastName":"alpha - invalid"}}`,
-			//},
-			//{
-			//	desc:     "Should return invalid password min field error",
-			//	input:    invalidPassword,
-			//	status:   400,
-			//	expected: `{"msg":"Bad Request","status":400,"error":{"Password":"min - invalid"}}`,
-			//},
+			{
+				desc:   "Should return invalid email field error",
+				input:  invalidEmail,
+				status: 400,
+				expected: &utils.Error{
+					&utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"Email": "email - invalid",
+						},
+					},
+				},
+			},
+			{
+				desc:   "Should return invalid firstName and lastName minimum field error",
+				input:  invalidMinNames,
+				status: 400,
+				expected: &utils.Error{
+					&utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"FirstName": "min - invalid",
+							"LastName":  "min - invalid",
+						},
+					},
+				},
+			},
+			{
+				desc:   "Should return invalid firstName and lastName maximum field error",
+				input:  invalidMaxNames,
+				status: 400,
+				expected: &utils.Error{
+					&utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"FirstName": "max - invalid",
+							"LastName":  "max - invalid",
+						},
+					},
+				},
+			},
+			{
+				desc:   "Should return invalid firstName and lastName maximum field error",
+				input:  invalidAlphaNames,
+				status: 400,
+				expected: &utils.Error{
+					&utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"FirstName": "alpha - invalid",
+							"LastName":  "alpha - invalid",
+						},
+					},
+				},
+			},
+			{
+				desc:   "Should return invalid password min field error",
+				input:  invalidPassword,
+				status: 400,
+				expected: &utils.Error{
+					&utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"Password": "min - invalid",
+						},
+					},
+				},
+			},
 		}
 
 		for _, tc := range tests {
@@ -319,30 +358,30 @@ func TestHandleSignin(t *testing.T) {
 			}
 
 			t.Run(fmt.Sprintf("should return %d status code", tc.status), func(t *testing.T) {
-				//t.Parallel()
+				t.Parallel()
 				if resp.StatusCode != tc.status {
 					t.Errorf("expected status code %d but return %d", tc.status, resp.StatusCode)
 				}
 			})
 
 			t.Run(tc.desc, func(t *testing.T) {
-				//t.Parallel()
-				body := make([]byte, resp.ContentLength)
-				if _, readErr := resp.Body.Read(body); readErr != nil {
-					t.Error(readErr)
+				t.Parallel()
+				var body utils.Error
+				if errDecode := json.NewDecoder(resp.Body).Decode(&body); errDecode != nil {
+					t.Fatal(errDecode)
 				}
 
-				if string(body) != tc.expected {
-					t.Errorf("should return %s but received %s", tc.expected, string(body))
+				if !reflect.DeepEqual(&body, tc.expected) {
+					t.Errorf("expected response %+v, but got %+v", tc.expected, body)
 				}
 			})
 		}
 	})
 
-	email := "sing_in@test.com"
 	t.Run("Signin user", func(t *testing.T) {
+		t.Parallel()
 		params := types.CreateUserParams{
-			Email:     email,
+			Email:     "sing_in@test.com",
 			FirstName: "sign",
 			LastName:  "in",
 			Password:  "1234567",
@@ -353,15 +392,25 @@ func TestHandleSignin(t *testing.T) {
 			Target:  target,
 			Payload: bytes.NewReader(b),
 		}
-		res, err := app.Test(testReq.NewRequestWithHeader())
+		resp, err := app.Test(testReq.NewRequestWithHeader())
 		if err != nil {
 			t.Error(err)
 		}
 
-		var createdUser *types.User
-		if err = json.NewDecoder(res.Body).Decode(createdUser); err != nil {
-			t.Fatal(err)
+		var result utils.GenericResponse
+		if errDecode := json.NewDecoder(resp.Body).Decode(&result); errDecode != nil {
+			t.Fatal(errDecode)
 		}
+
+		data, err := json.Marshal(result.Data)
+		if err != nil {
+			t.Fatalf("Failed to marshal Data field: %v", err)
+		}
+		var createdUser *types.User
+		if err = json.Unmarshal(data, &createdUser); err != nil {
+			t.Fatalf("Failed to unmarshal Data field into AuthResponse: %v", err)
+		}
+
 		if len(createdUser.ID.Hex()) == 0 {
 			t.Errorf("expecting a user id to be set")
 		}
@@ -380,8 +429,10 @@ func TestHandleSignin(t *testing.T) {
 	})
 
 	t.Run("Not insert user with existing email", func(t *testing.T) {
+		t.Parallel()
+		fixtures.AddUser(*tdb.Store, "signnew", "user", false)
 		params := types.CreateUserParams{
-			Email:     email,
+			Email:     "signnew_user@test.com",
 			FirstName: "Test",
 			LastName:  "Bar",
 			Password:  "1234567",
@@ -392,13 +443,13 @@ func TestHandleSignin(t *testing.T) {
 			Target:  target,
 			Payload: bytes.NewReader(b),
 		}
-		res, err := app.Test(testReq.NewRequestWithHeader())
+		resp, err := app.Test(testReq.NewRequestWithHeader())
 		if err != nil {
 			t.Error(err)
 		}
 
-		if res.StatusCode != 409 {
-			t.Errorf("expected 409 conflict status but received %d", res.StatusCode)
+		if resp.StatusCode != 409 {
+			t.Errorf("expected 409 conflict status but received %d", resp.StatusCode)
 		}
 	})
 }

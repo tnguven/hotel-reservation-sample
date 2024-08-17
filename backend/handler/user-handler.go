@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/gofiber/fiber/v2/log"
 
@@ -94,16 +95,26 @@ func (h *Handler) HandlePutUser(c *fiber.Ctx) error {
 		params *types.UpdateUserParams
 	)
 	if err := c.BodyParser(&params); err != nil {
-		log.Errorf("HandlePutUser: error parsing params: %v", err)
 		return utils.NewError(err, fiber.StatusInternalServerError, "error parsing body")
 	}
-	if err := h.userStore.PutUser(c.Context(), params, id); err != nil {
-		log.Errorf("HandlePutUser: error putting user: %v", err)
-		return utils.NewError(err, fiber.StatusInternalServerError, "error updating user")
+
+	matchCount, updateErr := h.userStore.PutUser(c.Context(), params, id)
+	if updateErr != nil {
+		log.Errorf("HandlePutUser: error putting user: %v", updateErr)
+		return utils.NewError(updateErr, fiber.StatusInternalServerError, "error updating user")
+	}
+
+	if matchCount == 0 {
+		return &utils.Error{
+			GenericResponse: &utils.GenericResponse{
+				Status: http.StatusNotFound,
+				Msg:    fmt.Sprintf("no user found with id %s", id),
+			},
+		}
 	}
 
 	return c.Status(fiber.StatusOK).JSON(&utils.GenericResponse{
-		Msg:    fmt.Sprintf("User %v updated", id),
+		Msg:    fmt.Sprintf("User %s updated", id),
 		Status: fiber.StatusOK,
 	})
 }

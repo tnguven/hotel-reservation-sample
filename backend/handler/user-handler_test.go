@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/tnguven/hotel-reservation-app/db/fixtures"
@@ -12,51 +14,46 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-const (
-	withLog            = false
-	invalidMaxCharName = "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT"
-)
-
 func TestPostUser(t *testing.T) {
-	_, app := setup(db, false, configs)
-
+	tdb, app := setup(db, false, configs)
+	invalidMaxCharName := strings.Repeat("a", 49)
 	const target = "/v1/users"
 
 	t.Run("Validations", func(t *testing.T) {
 		t.Parallel()
 		type test struct {
-			expect   string
-			input    types.CreateUserParams
-			expected string
+			desc     string
+			input    *types.CreateUserParams
+			expected *utils.Error
 			status   int
 		}
 
-		partialInput := types.CreateUserParams{}
-		invalidEmail := types.CreateUserParams{
+		partialInput := &types.CreateUserParams{}
+		invalidEmail := &types.CreateUserParams{
 			Email:     "invalid-email",
 			FirstName: "Tan",
 			LastName:  "Foo",
 			Password:  "1234567",
 		}
-		invalidMinNames := types.CreateUserParams{
+		invalidMinNames := &types.CreateUserParams{
 			Email:     "test@test.com",
 			FirstName: "T",
 			LastName:  "F",
 			Password:  "1234567",
 		}
-		invalidMaxNames := types.CreateUserParams{
+		invalidMaxNames := &types.CreateUserParams{
 			Email:     "test@test.com",
 			FirstName: invalidMaxCharName,
 			LastName:  invalidMaxCharName,
 			Password:  "1234567",
 		}
-		invalidAlphaNames := types.CreateUserParams{
+		invalidAlphaNames := &types.CreateUserParams{
 			Email:     "test@test.com",
 			FirstName: "Test test",
 			LastName:  "Foo foo",
 			Password:  "1234567",
 		}
-		invalidPassword := types.CreateUserParams{
+		invalidPassword := &types.CreateUserParams{
 			Email:     "test@test.com",
 			FirstName: "Test",
 			LastName:  "Foo",
@@ -65,40 +62,94 @@ func TestPostUser(t *testing.T) {
 
 		tests := []test{
 			{
-				expect:   "Should return all required fields error",
-				input:    partialInput,
-				status:   400,
-				expected: `{"errors":{"Email":"required","FirstName":"required","LastName":"required","Password":"required"}}`,
+				desc:   "Should return all required fields error",
+				input:  partialInput,
+				status: 400,
+				expected: &utils.Error{
+					&utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"Email":     "required",
+							"FirstName": "required",
+							"LastName":  "required",
+							"Password":  "required",
+						},
+					},
+				},
 			},
 			{
-				expect:   "Should return invalid email field error",
-				input:    invalidEmail,
-				status:   400,
-				expected: `{"errors":{"Email":"email - invalid"}}`,
+				desc:   "Should return invalid email field error",
+				input:  invalidEmail,
+				status: 400,
+				expected: &utils.Error{
+					&utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"Email": "email - invalid",
+						},
+					},
+				},
 			},
 			{
-				expect:   "Should return invalid firstName and lastName minimum field error",
-				input:    invalidMinNames,
-				status:   400,
-				expected: `{"errors":{"FirstName":"min - invalid","LastName":"min - invalid"}}`,
+				desc:   "Should return invalid firstName and lastName minimum field error",
+				input:  invalidMinNames,
+				status: 400,
+				expected: &utils.Error{
+					&utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"FirstName": "min - invalid",
+							"LastName":  "min - invalid",
+						},
+					},
+				},
 			},
 			{
-				expect:   "Should return invalid firstName and lastName maximum field error",
-				input:    invalidMaxNames,
-				status:   400,
-				expected: `{"errors":{"FirstName":"max - invalid","LastName":"max - invalid"}}`,
+				desc:   "Should return invalid firstName and lastName maximum field error",
+				input:  invalidMaxNames,
+				status: 400,
+				expected: &utils.Error{
+					&utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"FirstName": "max - invalid",
+							"LastName":  "max - invalid",
+						},
+					},
+				},
 			},
 			{
-				expect:   "Should return invalid firstName and lastName maximum field error",
-				input:    invalidAlphaNames,
-				status:   400,
-				expected: `{"errors":{"FirstName":"alpha - invalid","LastName":"alpha - invalid"}}`,
+				desc:   "Should return invalid firstName and lastName maximum field error",
+				input:  invalidAlphaNames,
+				status: 400,
+				expected: &utils.Error{
+					&utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"FirstName": "alpha - invalid",
+							"LastName":  "alpha - invalid",
+						},
+					},
+				},
 			},
 			{
-				expect:   "Should return invalid password min field error",
-				input:    invalidPassword,
-				status:   400,
-				expected: `{"errors":{"Password":"min - invalid"}}`,
+				desc:   "Should return invalid password min field error",
+				input:  invalidPassword,
+				status: 400,
+				expected: &utils.Error{
+					&utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"Password": "min - invalid",
+						},
+					},
+				},
 			},
 		}
 
@@ -121,23 +172,23 @@ func TestPostUser(t *testing.T) {
 				}
 			})
 
-			t.Run(tc.expect, func(t *testing.T) {
+			t.Run(tc.desc, func(t *testing.T) {
 				t.Parallel()
-				body := make([]byte, resp.ContentLength)
-				resp.Body.Read(body)
+				var body utils.Error
+				if errDecode := json.NewDecoder(resp.Body).Decode(&body); errDecode != nil {
+					t.Fatal(errDecode)
+				}
 
-				if string(body) != tc.expected {
-					t.Errorf("should return %s but received %s", tc.expected, string(body))
+				if !reflect.DeepEqual(&body, tc.expected) {
+					t.Errorf("expected response %+v, but got %+v", tc.expected, body)
 				}
 			})
 		}
 	})
 
-	email := "insert_user@test.com"
-
 	t.Run("Insert user", func(t *testing.T) {
 		params := types.CreateUserParams{
-			Email:     email,
+			Email:     "insert_user@test.com",
 			FirstName: "Tan",
 			LastName:  "Foo",
 			Password:  "1234567",
@@ -148,15 +199,26 @@ func TestPostUser(t *testing.T) {
 			Target:  target,
 			Payload: bytes.NewReader(b),
 		}
-		res, err := app.Test(testReq.NewRequestWithHeader())
+		resp, err := app.Test(testReq.NewRequestWithHeader())
 		if err != nil {
 			t.Error(err)
 		}
 
-		var createdUser types.User
+		var result utils.GenericResponse
+		if errDecode := json.NewDecoder(resp.Body).Decode(&result); errDecode != nil {
+			t.Fatal(errDecode)
+		}
 
-		json.NewDecoder(res.Body).Decode(&createdUser)
-		if len(createdUser.ID) == 0 {
+		data, err := json.Marshal(result.Data)
+		if err != nil {
+			t.Fatalf("Failed to marshal Data field: %v", err)
+		}
+		var createdUser *types.User
+		if err = json.Unmarshal(data, &createdUser); err != nil {
+			t.Fatalf("Failed to unmarshal Data field into AuthResponse: %v", err)
+		}
+
+		if len(createdUser.ID.Hex()) == 0 {
 			t.Errorf("expecting a user id to be set")
 		}
 		if len(createdUser.EncryptedPassword) > 0 {
@@ -174,8 +236,9 @@ func TestPostUser(t *testing.T) {
 	})
 
 	t.Run("Not insert user with existing email", func(t *testing.T) {
+		fixtures.AddUser(*tdb.Store, "insertnew", "user", false)
 		params := types.CreateUserParams{
-			Email:     email,
+			Email:     "insertnew_user@test.com",
 			FirstName: "same",
 			LastName:  "email",
 			Password:  "1234567",
@@ -186,13 +249,13 @@ func TestPostUser(t *testing.T) {
 			Target:  target,
 			Payload: bytes.NewReader(b),
 		}
-		res, err := app.Test(testReq.NewRequestWithHeader())
+		resp, err := app.Test(testReq.NewRequestWithHeader())
 		if err != nil {
 			t.Error(err)
 		}
 
-		if res.StatusCode != 409 {
-			t.Errorf("expected 409 conflict status but received %d", res.StatusCode)
+		if resp.StatusCode != 409 {
+			t.Errorf("expected 409 conflict status but received %d", resp.StatusCode)
 		}
 	})
 }
@@ -216,8 +279,19 @@ func TestHandleGetUser(t *testing.T) {
 			t.Error(err)
 		}
 
-		var fetchedUser types.User
-		json.NewDecoder(resp.Body).Decode(&fetchedUser)
+		var result utils.GenericResponse
+		if errDecode := json.NewDecoder(resp.Body).Decode(&result); errDecode != nil {
+			t.Fatal(errDecode)
+		}
+
+		data, err := json.Marshal(result.Data)
+		if err != nil {
+			t.Fatalf("Failed to marshal Data field: %v", err)
+		}
+		var fetchedUser *types.User
+		if err = json.Unmarshal(data, &fetchedUser); err != nil {
+			t.Fatalf("Failed to unmarshal Data field into AuthResponse: %v", err)
+		}
 
 		if len(fetchedUser.EncryptedPassword) > 0 {
 			t.Errorf("should not include EncryptedPassword in json response")
@@ -239,64 +313,99 @@ func TestHandleGetUser(t *testing.T) {
 
 func TestHandlePutUser(t *testing.T) {
 	tdb, app := setup(db, false, configs)
-
+	invalidMaxCharName := strings.Repeat("a", 49)
 	const target = "/v1/users"
 
 	t.Run("Validations", func(t *testing.T) {
 		t.Parallel()
-		invalidMinFields := types.UpdateUserParams{
+		invalidMinFields := &types.UpdateUserParams{
 			FirstName: "T",
 			LastName:  "F",
 		}
-		invalidMaxFields := types.UpdateUserParams{
+		invalidMaxFields := &types.UpdateUserParams{
 			FirstName: invalidMaxCharName,
 			LastName:  invalidMaxCharName,
 		}
-		invalidAlphaFields := types.UpdateUserParams{
+		invalidAlphaFields := &types.UpdateUserParams{
 			FirstName: "Test1",
 			LastName:  "Test2",
 		}
-		validParams := types.UpdateUserParams{
+		validParams := &types.UpdateUserParams{
 			FirstName: "Foo",
 			LastName:  "Bar",
 		}
 
 		type test struct {
 			id       string
-			input    types.UpdateUserParams
-			expect   string
-			expected string
+			input    *types.UpdateUserParams
+			desc     string
+			expected *utils.Error
 			status   int
 		}
 
 		tests := []test{
 			{
-				id:       primitive.NewObjectID().Hex(),
-				expect:   "Should return invalid firstName and lastName minimum field error",
-				input:    invalidMinFields,
-				status:   400,
-				expected: `{"errors":{"FirstName":"min - invalid","LastName":"min - invalid"}}`,
+				id:     primitive.NewObjectID().Hex(),
+				desc:   "Should return invalid firstName and lastName minimum field error",
+				input:  invalidMinFields,
+				status: 400,
+				expected: &utils.Error{
+					&utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"FirstName": "min - invalid",
+							"LastName":  "min - invalid",
+						},
+					},
+				},
 			},
 			{
-				id:       primitive.NewObjectID().Hex(),
-				expect:   "Should return invalid firstName and lastName maximum field error",
-				input:    invalidMaxFields,
-				status:   400,
-				expected: `{"errors":{"FirstName":"max - invalid","LastName":"max - invalid"}}`,
+				id:     primitive.NewObjectID().Hex(),
+				desc:   "Should return invalid firstName and lastName maximum field error",
+				input:  invalidMaxFields,
+				status: 400,
+				expected: &utils.Error{
+					&utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"FirstName": "max - invalid",
+							"LastName":  "max - invalid",
+						},
+					},
+				},
 			},
 			{
-				id:       primitive.NewObjectID().Hex(),
-				expect:   "Should return invalid firstName and lastName maximum field error",
-				input:    invalidAlphaFields,
-				status:   400,
-				expected: `{"errors":{"FirstName":"alpha - invalid","LastName":"alpha - invalid"}}`,
+				id:     primitive.NewObjectID().Hex(),
+				desc:   "Should return invalid firstName and lastName maximum field error",
+				input:  invalidAlphaFields,
+				status: 400,
+				expected: &utils.Error{
+					&utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"FirstName": "alpha - invalid",
+							"LastName":  "alpha - invalid",
+						},
+					},
+				},
 			},
 			{
-				id:       "invalidId",
-				input:    validParams,
-				expect:   "must return required and invalid fields",
-				status:   400,
-				expected: `{"errors":{"ID":"id - invalid"}}`,
+				id:     "invalidId",
+				input:  validParams,
+				desc:   "must return required and invalid fields",
+				status: 400,
+				expected: &utils.Error{
+					&utils.GenericResponse{
+						Status: 400,
+						Msg:    "Bad Request",
+						Errors: map[string]interface{}{
+							"ID": "id - invalid",
+						},
+					},
+				},
 			},
 		}
 
@@ -319,13 +428,15 @@ func TestHandlePutUser(t *testing.T) {
 				}
 			})
 
-			t.Run(tc.expect, func(t *testing.T) {
+			t.Run(tc.desc, func(t *testing.T) {
 				t.Parallel()
-				body := make([]byte, resp.ContentLength)
-				resp.Body.Read(body)
+				var body utils.Error
+				if errDecode := json.NewDecoder(resp.Body).Decode(&body); errDecode != nil {
+					t.Fatal(errDecode)
+				}
 
-				if string(body) != tc.expected {
-					t.Errorf("should return %s but received %s", tc.expected, string(body))
+				if !reflect.DeepEqual(&body, tc.expected) {
+					t.Errorf("expected response %+v, but got %+v", tc.expected, body)
 				}
 			})
 		}
@@ -348,13 +459,13 @@ func TestHandlePutUser(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		var response map[string]interface{}
-		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-			t.Fatal(err)
+		var result utils.GenericResponse
+		if errDecode := json.NewDecoder(resp.Body).Decode(&result); errDecode != nil {
+			t.Fatal(errDecode)
 		}
 
-		if response["updated"] != user.ID.Hex() {
-			t.Errorf("expecting user id %s to be updated, but got %v", user.ID.Hex(), response["updated"])
+		if result.Msg != fmt.Sprintf("User %s updated", user.ID.Hex()) {
+			t.Errorf("expecting user id %s to be updated, but got %v", user.ID.Hex(), result.Msg)
 		}
 	})
 
@@ -370,20 +481,20 @@ func TestHandlePutUser(t *testing.T) {
 			Target:  fmt.Sprintf("%s/%s", target, obi),
 			Payload: bytes.NewReader(b),
 		}
-		res, err := app.Test(testReq.NewRequestWithHeader())
+		resp, err := app.Test(testReq.NewRequestWithHeader())
 		if err != nil {
 			t.Error(err)
 		}
 
-		var response map[string]interface{}
-		if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-			t.Fatal(err)
+		var response utils.GenericResponse
+		if errDecode := json.NewDecoder(resp.Body).Decode(&response); errDecode != nil {
+			t.Fatal(errDecode)
 		}
 
 		expectedError := fmt.Sprintf("no user found with id %s", obi)
 
-		if response["error"] != expectedError {
-			t.Errorf("expecting error %s but received %s", expectedError, response["error"])
+		if response.Msg != expectedError {
+			t.Errorf("expecting error %s but received %s", expectedError, response.Msg)
 		}
 	})
 }

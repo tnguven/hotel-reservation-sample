@@ -60,7 +60,7 @@ func (h *Handler) HandleSignIn(c *fiber.Ctx) error {
 		if mongo.IsDuplicateKeyError(err) {
 			return utils.ConflictError("email already exist")
 		}
-		return err
+		return utils.NewError(err, fiber.StatusInternalServerError, "something went wrong inserting user")
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(&utils.GenericResponse{
