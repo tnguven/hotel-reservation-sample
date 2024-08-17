@@ -1,2 +1,4 @@
 # ignore all . folders but include . files
-.**/
+
+.env
+.bin

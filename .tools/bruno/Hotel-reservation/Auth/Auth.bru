@@ -1,0 +1,30 @@
+meta {
+  name: Auth
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:5000/v1/auth
+  body: json
+  auth: none
+}
+
+headers {
+  Content-type: application/json
+}
+
+body:json {
+  {
+    "email": "tan_guven@test.com",
+    "password": "tan_guven"
+  }
+}
+
+vars:pre-request {
+  : 
+}
+
+vars:post-response {
+  X-Api-Token: res.body.data.token
+}

@@ -7,11 +7,11 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/tnguven/hotel-reservation-app/config"
-	"github.com/tnguven/hotel-reservation-app/db"
 	"github.com/tnguven/hotel-reservation-app/db/fixtures"
-	"github.com/tnguven/hotel-reservation-app/store"
-	"github.com/tnguven/hotel-reservation-app/types"
+	"github.com/tnguven/hotel-reservation-app/internals/config"
+	"github.com/tnguven/hotel-reservation-app/internals/repo"
+	"github.com/tnguven/hotel-reservation-app/internals/store"
+	"github.com/tnguven/hotel-reservation-app/internals/types"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -23,11 +23,11 @@ var (
 
 func init() {
 	configs := config.New().
-		WithDbUserName("admin").
-		WithDbPassword("secret").
+		// WithDbUserName("admin").
+		// WithDbPassword("secret").
 		Validate()
 
-	mClient, database := db.New(ctx, configs)
+	mClient, database := repo.NewMongoClient(ctx, configs)
 	client = mClient
 
 	userStore := store.NewMongoUserStore(database)

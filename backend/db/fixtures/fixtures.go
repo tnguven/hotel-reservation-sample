@@ -4,19 +4,20 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
-	"github.com/tnguven/hotel-reservation-app/store"
-	"github.com/tnguven/hotel-reservation-app/types"
+	"github.com/tnguven/hotel-reservation-app/internals/store"
+	"github.com/tnguven/hotel-reservation-app/internals/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func AddUser(store store.Stores, fname, lname string, isAdmin bool) *types.User {
 	user, err := types.NewUserFromParams(types.CreateUserParams{
-		Email:     fmt.Sprintf("%s_%s@test.com", fname, lname),
+		Email:     fmt.Sprintf("%s_%s@test.com", strings.ToLower(fname), strings.ToLower(lname)),
 		FirstName: fname,
 		LastName:  lname,
-		Password:  fmt.Sprintf("%s_%s", fname, lname),
+		Password:  fmt.Sprintf("%s_%s", strings.ToLower(fname), strings.ToLower(lname)),
 	})
 	if err != nil {
 		log.Fatal(err)

@@ -2,7 +2,7 @@ BUILD_DIR="./.bin/api"
 GO_FLAGS=GOEXPERIMENT=rangefunc
 
 build:
-	@${GO_FLAGS} go build -o "${BUILD_DIR}"
+	@${GO_FLAGS} go build -o .bin/api cmd/api/main.go
 
 run: build
 	@${GO_FLAGS} "${BUILD_DIR}"
