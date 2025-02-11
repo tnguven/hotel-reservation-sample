@@ -59,7 +59,7 @@ func TestHandleGetBookings(t *testing.T) {
 			t.Fatalf("expected 200 status code but received %d", resp.StatusCode)
 		}
 
-		var response *utils.GenericResponse
+		var response *types.GenericResponse
 		if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			t.Fatal(err)
 		}
@@ -94,7 +94,7 @@ func TestHandleGetBookings(t *testing.T) {
 			t.Fatalf("expected 200 status code but received %d", resp.StatusCode)
 		}
 
-		var response *utils.GenericResponse
+		var response *types.GenericResponse
 		if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			t.Fatal(err)
 		}

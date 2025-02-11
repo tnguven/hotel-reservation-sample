@@ -38,3 +38,21 @@ func (p *UpdateHotelParams) ToBsonMap() bson.M {
 
 	return update
 }
+
+type HotelQueryParams struct {
+	Rooms  bool `query:"room"`
+	Rating int  `query:"rating"`
+
+	*PaginationQuery
+}
+
+func NewHotelQueryParam(rooms bool, rating int, page int64, limit int64) HotelQueryParams {
+	return HotelQueryParams{
+		Rooms:  false,
+		Rating: 0,
+		PaginationQuery: &PaginationQuery{
+			Limit: page,
+			Page:  (page - 1) * limit,
+		},
+	}
+}

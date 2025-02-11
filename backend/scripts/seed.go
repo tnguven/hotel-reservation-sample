@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/tnguven/hotel-reservation-app/db/fixtures"
@@ -73,7 +74,24 @@ func main() {
 		{"Swissotel", "France"},
 		{"Swissotel", "Ankara"},
 		{"Swissotel", "Turkey"},
+		{"X", "Germany"},
+		{"X", "United Kingdom"},
+		{"X", "France"},
+		{"X", "Ankara"},
+		{"X", "Turkey"},
+		{"Y", "Germany"},
+		{"Y", "United Kingdom"},
+		{"Y", "France"},
+		{"Y", "Ankara"},
+		{"Y", "Turkey"},
+		{"Z", "Germany"},
+		{"Z", "United Kingdom"},
+		{"Z", "France"},
+		{"Z", "Ankara"},
+		{"Z", "Turkey"},
 	}
+
+	wg := sync.WaitGroup{}
 
 	for _, h := range hotels {
 		hotel := fixtures.AddHotel(dbStore, h[0], h[1], randIntGenerator(1, 10), nil)
@@ -101,14 +119,19 @@ func main() {
 		}
 
 		for _, room := range rooms {
-			insertedRoom := fixtures.AddRoom(dbStore, room.Type, hotel.ID, room.BasePrice)
-			if randIntGenerator(1, 10) > 5 {
-				booked := fixtures.AddBooking(dbStore, user.ID, insertedRoom.ID.Hex(), time.Now(), time.Now().AddDate(0, 0, randIntGenerator(1, 10)))
-				fmt.Println("booking =>", booked.ID)
-			}
-			fmt.Println(insertedRoom)
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				insertedRoom := fixtures.AddRoom(dbStore, room.Type, hotel.ID, room.BasePrice)
+				if randIntGenerator(1, 10) > 5 {
+					booked := fixtures.AddBooking(dbStore, user.ID, insertedRoom.ID.Hex(), time.Now(), time.Now().AddDate(0, 0, randIntGenerator(1, 10)))
+					fmt.Println("booking =>", booked.ID)
+				}
+			}()
 		}
 	}
+
+	wg.Wait()
 }
 
 func randomFloatGenerator(min float64, max float64) float64 {

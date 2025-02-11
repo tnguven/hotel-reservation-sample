@@ -13,7 +13,7 @@ import (
 )
 
 func AddUser(store store.Stores, fname, lname string, isAdmin bool) *types.User {
-	user, err := types.NewUserFromParams(types.CreateUserParams{
+	user, err := types.NewUserFromParams(&types.CreateUserParams{
 		Email:     fmt.Sprintf("%s_%s@test.com", strings.ToLower(fname), strings.ToLower(lname)),
 		FirstName: fname,
 		LastName:  lname,

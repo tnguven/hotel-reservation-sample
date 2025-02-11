@@ -21,67 +21,66 @@ func (h *Handler) HandleGetUser(c *fiber.Ctx) error {
 			return utils.NotFoundError()
 		}
 		log.Errorf("HandleGetUser: error getting user: %v", err)
-		return utils.NewError(err, fiber.StatusInternalServerError, "Error getting user")
+		return types.NewError(err, fiber.StatusInternalServerError, "Error getting user")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(&utils.GenericResponse{
+	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
 		Data:   user,
 		Status: fiber.StatusOK,
 	})
 }
 
 func (h *Handler) HandleGetUsers(c *fiber.Ctx) error {
-	query := types.PaginationDTO{
-		Limit:  10, // default
-		Offset: 0,
-	}
-	if err := c.QueryParser(&query); err != nil {
-		return utils.BadRequestError()
+	query, ok := c.Locals(getUsersRequestKey).(*types.PaginationQuery)
+	if !ok {
+		log.Error("getUsers missing locals")
+		return utils.BadRequestError("")
 	}
 
-	users, err := h.userStore.GetUsers(c.Context(), &query)
+	users, total, err := h.userStore.GetUsers(c.Context(), query)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return utils.NotFoundError()
 		}
 		log.Errorf("HandleGetUsers: error getting users: %v", err)
-		return utils.NewError(err, fiber.StatusInternalServerError, "error getting users")
+		return types.NewError(err, fiber.StatusInternalServerError, "error getting users")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(&utils.GenericResponse{
+	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
 		Status: fiber.StatusOK,
-		PaginationResponse: &utils.PaginationResponse{
-			Count:   len(users),
-			Results: users,
-			Offset:  query.Offset,
+		Data:   users,
+		PaginationResponse: &types.PaginationResponse{
+			Count: total,
+			Page:  query.Page,
+			Limit: query.Limit,
 		},
 	})
 }
 
 func (h *Handler) HandlePostUser(c *fiber.Ctx) error {
-	var params types.CreateUserParams
+	var params *types.CreateUserParams
 	if err := c.BodyParser(&params); err != nil {
 		return err
 	}
 
 	user, err := types.NewUserFromParams(params)
 	if err != nil {
-		return utils.NewError(err, fiber.StatusInternalServerError, "")
+		return types.NewError(err, fiber.StatusInternalServerError, "")
 	}
 
 	insertedUser, err := h.userStore.InsertUser(c.Context(), user)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			return c.Status(fiber.StatusConflict).JSON(&utils.GenericResponse{
+			return c.Status(fiber.StatusConflict).JSON(&types.GenericResponse{
 				Msg:    "email already exist",
 				Status: fiber.StatusConflict,
 			})
 		}
 		log.Errorf("HandlePostUser: error inserting user: %v", err)
-		return utils.NewError(err, fiber.StatusInternalServerError, "something went wrong")
+		return types.NewError(err, fiber.StatusInternalServerError, "something went wrong")
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(&utils.GenericResponse{
+	return c.Status(fiber.StatusCreated).JSON(&types.GenericResponse{
 		Data:   insertedUser,
 		Status: fiber.StatusCreated,
 	})
@@ -92,10 +91,10 @@ func (h *Handler) HandleDeleteUser(c *fiber.Ctx) error {
 
 	if err := h.userStore.DeleteUser(c.Context(), id); err != nil {
 		log.Errorf("HandleDeleteUser: error deleting user: %v", err)
-		return utils.NewError(err, fiber.StatusInternalServerError, "error deleting user")
+		return types.NewError(err, fiber.StatusInternalServerError, "error deleting user")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(&utils.GenericResponse{
+	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
 		Msg:    fmt.Sprintf("User %s deleted", id),
 		Status: fiber.StatusOK,
 	})
@@ -107,25 +106,25 @@ func (h *Handler) HandlePutUser(c *fiber.Ctx) error {
 		params *types.UpdateUserParams
 	)
 	if err := c.BodyParser(&params); err != nil {
-		return utils.NewError(err, fiber.StatusInternalServerError, "error parsing body")
+		return types.NewError(err, fiber.StatusInternalServerError, "error parsing body")
 	}
 
 	matchCount, updateErr := h.userStore.PutUser(c.Context(), params, id)
 	if updateErr != nil {
 		log.Errorf("HandlePutUser: error putting user: %v", updateErr)
-		return utils.NewError(updateErr, fiber.StatusInternalServerError, "error updating user")
+		return types.NewError(updateErr, fiber.StatusInternalServerError, "error updating user")
 	}
 
 	if matchCount == 0 {
-		return &utils.Error{
-			GenericResponse: &utils.GenericResponse{
+		return &types.Error{
+			GenericResponse: &types.GenericResponse{
 				Status: http.StatusNotFound,
 				Msg:    fmt.Sprintf("no user found with id %s", id),
 			},
 		}
 	}
 
-	return c.Status(fiber.StatusOK).JSON(&utils.GenericResponse{
+	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
 		Msg:    fmt.Sprintf("User %s updated", id),
 		Status: fiber.StatusOK,
 	})

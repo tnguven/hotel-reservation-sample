@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/tnguven/hotel-reservation-app/internals/config"
@@ -10,31 +11,44 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+type AuthResponse struct {
+	User  *types.User `json:"user"`
+	Token string      `json:"token"`
+}
+type signInRequest struct {
+	*types.CreateUserParams
+}
+
 func (h *Handler) HandleAuthenticate(configs *config.Configs) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		var authParams types.AuthParams
-		if err := c.BodyParser(&authParams); err != nil {
-			return err
+		authReqParams, ok := c.Locals(authRequestKey).(*authRequest)
+		if !ok {
+			log.Printf("something went wrong to get the authReqParams")
+			return utils.BadRequestError("")
+		}
+		params := types.AuthParams{
+			Email:    authReqParams.Email,
+			Password: authReqParams.Password,
 		}
 
-		user, err := h.userStore.GetUserByEmail(c.Context(), authParams.Email)
+		user, err := h.userStore.GetUserByEmail(c.Context(), params.Email)
 		if err != nil {
 			if errors.Is(err, mongo.ErrNoDocuments) {
 				return utils.InvalidCredError()
 			}
-			return utils.NewError(err, fiber.StatusInternalServerError, "")
+			return types.NewError(err, fiber.StatusInternalServerError, "")
 		}
 
-		if !authParams.IsValidPassword(user.EncryptedPassword) {
+		if !params.IsValidPassword(user.EncryptedPassword) {
 			return utils.InvalidCredError()
 		}
 
 		token, err := utils.GenerateJWT(user.ID.Hex(), user.IsAdmin, configs)
 		if err != nil {
-			return utils.NewError(err, fiber.StatusInternalServerError, "")
+			return types.NewError(err, fiber.StatusInternalServerError, "")
 		}
 
-		return c.Status(fiber.StatusOK).JSON(&utils.GenericResponse{
+		return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
 			Data: &AuthResponse{
 				User:  user,
 				Token: token,
@@ -45,14 +59,16 @@ func (h *Handler) HandleAuthenticate(configs *config.Configs) fiber.Handler {
 }
 
 func (h *Handler) HandleSignIn(c *fiber.Ctx) error {
-	var params types.CreateUserParams
-	if err := c.BodyParser(&params); err != nil {
-		return err
+	params, ok := c.Locals(insertUserRequestKey).(*types.CreateUserParams)
+	if !ok {
+		log.Println("insertUserRequest local missing")
+		return utils.BadRequestError("")
 	}
 
 	user, err := types.NewUserFromParams(params)
 	if err != nil {
-		return err
+		log.Printf("new user from params failed: %v", err)
+		return utils.InternalServerError("")
 	}
 
 	insertedUser, err := h.userStore.InsertUser(c.Context(), user)
@@ -60,10 +76,12 @@ func (h *Handler) HandleSignIn(c *fiber.Ctx) error {
 		if mongo.IsDuplicateKeyError(err) {
 			return utils.ConflictError("email already exist")
 		}
-		return utils.NewError(err, fiber.StatusInternalServerError, "something went wrong inserting user")
+
+		log.Printf("userStore.InserUser failed: %v", err)
+		return utils.InternalServerError("can not inset the new user...")
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(&utils.GenericResponse{
+	return c.Status(fiber.StatusCreated).JSON(&types.GenericResponse{
 		Data:   insertedUser,
 		Status: fiber.StatusCreated,
 	})

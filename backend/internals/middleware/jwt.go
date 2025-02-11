@@ -19,7 +19,7 @@ func JWTAuthentication(userStore store.UserStore, configs *config.Configs) fiber
 
 		claims, err := validateToken(token[0], configs.JWTSecret)
 		if err != nil {
-			return err
+			return utils.BadRequestError("missing api token")
 		}
 
 		userID := claims["id"].(string)

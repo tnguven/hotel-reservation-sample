@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -32,12 +31,9 @@ func main() {
 	}
 
 	env := os.Getenv("ENV")
-
 	if len(env) == 0 {
 		env = "development"
 	}
-
-	fmt.Println("ENV: ", env)
 
 	configs := config.New().
 		WithEnv(env).
@@ -45,15 +41,14 @@ func main() {
 		// WithDbPassword("secret").
 		Validate()
 
-	rootCtx := context.Background()
-	client, database := repo.NewMongoClient(rootCtx, configs)
-
 	var (
-		route        = server.NewServer(configs.Log, configs.Env)
-		userStore    = store.NewMongoUserStore(database)
-		hotelStore   = store.NewMongoHotelStore(database)
-		roomStore    = store.NewMongoRoomStore(database, hotelStore) // TODO refactor this shenanigan
-		bookingStore = store.NewMongoBookingStore(database, roomStore)
+		rootCtx          = context.Background()
+		client, database = repo.NewMongoClient(rootCtx, configs)
+		route            = server.NewServer(configs.Log, configs.Env)
+		userStore        = store.NewMongoUserStore(database)
+		hotelStore       = store.NewMongoHotelStore(database)
+		roomStore        = store.NewMongoRoomStore(database, hotelStore) // TODO refactor this shenanigan
+		bookingStore     = store.NewMongoBookingStore(database, roomStore)
 	)
 
 	handlers := handler.NewHandler(&store.Stores{
@@ -72,7 +67,7 @@ func main() {
 
 	go func() {
 		if err := route.Listen(configs.Port); err != nil && err != http.ErrServerClosed {
-			log.Panic("⚠️ server listen error: %s", err)
+			log.Panicf("⚠️ server listen error: %s", err)
 		}
 	}()
 

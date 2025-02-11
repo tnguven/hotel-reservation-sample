@@ -20,13 +20,13 @@ type User struct {
 }
 
 type CreateUserParams struct {
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Email     string `json:"email"`
-	Password  string `json:"password"`
+	FirstName string `validate:"required,alpha,min=2,max=48" json:"firstName"`
+	LastName  string `validate:"required,alpha,min=2,max=48" json:"lastName"`
+	Email     string `validate:"required,email" json:"email"`
+	Password  string `validate:"required,min=7,max=256" json:"password"`
 }
 
-func NewUserFromParams(params CreateUserParams) (*User, error) {
+func NewUserFromParams(params *CreateUserParams) (*User, error) {
 	encpw, err := bcrypt.GenerateFromPassword([]byte(params.Password), bcryptCost)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ type UpdateUserParams struct {
 	LastName  string `json:"lastName,omitempty"`
 }
 
-func (p UpdateUserParams) ToBsonMap() bson.M {
+func (p *UpdateUserParams) ToBsonMap() bson.M {
 	values := bson.M{}
 
 	if len(p.FirstName) > 0 {

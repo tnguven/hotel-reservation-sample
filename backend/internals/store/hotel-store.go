@@ -18,7 +18,7 @@ type HotelStore interface {
 
 	InsertHotel(context.Context, *types.Hotel) (*types.Hotel, error)
 	PutHotel(context.Context, *types.UpdateHotelParams, *primitive.ObjectID) error
-	GetHotels(context.Context) ([]*types.Hotel, error)
+	GetHotels(context.Context, *types.HotelQueryParams) ([]*types.Hotel, int64, error)
 	GetHotelByID(context.Context, string) (*types.Hotel, error)
 }
 
@@ -34,18 +34,44 @@ func NewMongoHotelStore(db *mongo.Database) *MongoHotelStore {
 	}
 }
 
-func (ms *MongoHotelStore) GetHotels(ctx context.Context) ([]*types.Hotel, error) {
-	cur, err := ms.coll.Find(ctx, bson.M{}) // TODO add limit
+func (ms *MongoHotelStore) GetHotels(ctx context.Context, qParams *types.HotelQueryParams) ([]*types.Hotel, int64, error) {
+	pipeline := mongo.Pipeline{
+		bson.D{{Key: "$match", Value: bson.D{}}},
+		bson.D{{Key: "$facet", Value: bson.D{
+			{Key: "data", Value: bson.A{
+				bson.D{{Key: "$skip", Value: &qParams.Page}},
+				bson.D{{Key: "$limit", Value: &qParams.Limit}},
+			}},
+			{Key: "totalCount", Value: bson.A{
+				bson.D{{Key: "$count", Value: "count"}},
+			}},
+		}}},
+		bson.D{{Key: "$project", Value: bson.D{
+			{Key: "data", Value: 1},
+			{Key: "totalCount", Value: bson.D{
+				{Key: "$arrayElemAt", Value: bson.A{"$totalCount.count", 0}},
+			}},
+		}}},
+	}
+	cur, err := ms.coll.Aggregate(ctx, pipeline)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	var hotels []*types.Hotel
-	if err := cur.All(ctx, &hotels); err != nil {
-		return nil, err
+	var aggResult []struct {
+		Data       []*types.Hotel `bson:"data"`
+		TotalCount int64          `bson:"totalCount"`
 	}
 
-	return hotels, nil
+	if err := cur.All(ctx, &aggResult); err != nil {
+		return nil, 0, err
+	}
+
+	if len(aggResult) == 0 {
+		return []*types.Hotel{}, 0, nil
+	}
+
+	return aggResult[0].Data, aggResult[0].TotalCount, nil
 }
 
 func (ms *MongoHotelStore) GetHotelByID(ctx context.Context, hotelID string) (*types.Hotel, error) {

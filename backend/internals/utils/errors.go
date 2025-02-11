@@ -5,39 +5,10 @@ import (
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/tnguven/hotel-reservation-app/internals/types"
 )
 
-type Error struct {
-	*GenericResponse
-}
-
-func (err Error) Error() string {
-	return err.Msg
-}
-
-func NewError(err error, code int, msg string) *Error {
-	errors := make(map[string]interface{})
-	// TODO: add switch other variant
-	switch v := err.(type) {
-	default:
-		errors["body"] = v.Error()
-	}
-
-	message := http.StatusText(code)
-	if msg != "" {
-		message = msg
-	}
-
-	return &Error{
-		GenericResponse: &GenericResponse{
-			Status: code,
-			Msg:    message,
-			Errors: errors,
-		},
-	}
-}
-
-func ValidatorError(err error) *Error {
+func ValidatorError(err error) *types.Error {
 	errors := make(map[string]interface{})
 
 	for _, v := range err.(validator.ValidationErrors) {
@@ -50,8 +21,8 @@ func ValidatorError(err error) *Error {
 		errors[v.Field()] = fmt.Sprintf("%v%v", v.Tag(), suffix)
 	}
 
-	return &Error{
-		GenericResponse: &GenericResponse{
+	return &types.Error{
+		GenericResponse: &types.GenericResponse{
 			Status: http.StatusBadRequest,
 			Msg:    http.StatusText(http.StatusBadRequest),
 			Errors: errors,
@@ -59,60 +30,77 @@ func ValidatorError(err error) *Error {
 	}
 }
 
-func AccessForbiddenError() *Error {
-	return &Error{
-		GenericResponse: &GenericResponse{
+func AccessForbiddenError() *types.Error {
+	return &types.Error{
+		GenericResponse: &types.GenericResponse{
 			Status: http.StatusForbidden,
 			Msg:    http.StatusText(http.StatusForbidden),
 		},
 	}
 }
 
-func NotFoundError() *Error {
-	return &Error{
-		GenericResponse: &GenericResponse{
+func NotFoundError() *types.Error {
+	return &types.Error{
+		GenericResponse: &types.GenericResponse{
 			Status: http.StatusNotFound,
 			Msg:    http.StatusText(http.StatusNotFound),
 		},
 	}
 }
 
-func UnauthorizedError() *Error {
-	return &Error{
-		GenericResponse: &GenericResponse{
+func UnauthorizedError() *types.Error {
+	return &types.Error{
+		GenericResponse: &types.GenericResponse{
 			Status: http.StatusUnauthorized,
 			Msg:    http.StatusText(http.StatusUnauthorized),
 		},
 	}
 }
 
-func ConflictError(errorMessage string) *Error {
+func ConflictError(errorMessage string) *types.Error {
 	msg := http.StatusText(http.StatusConflict)
 	if errorMessage != "" {
 		msg = errorMessage
 	}
-	return &Error{
-		GenericResponse: &GenericResponse{
+	return &types.Error{
+		GenericResponse: &types.GenericResponse{
 			Status: http.StatusConflict,
 			Msg:    msg,
 		},
 	}
 }
 
-func InvalidCredError() *Error {
-	return &Error{
-		GenericResponse: &GenericResponse{
+func InvalidCredError() *types.Error {
+	return &types.Error{
+		GenericResponse: &types.GenericResponse{
 			Status: http.StatusBadRequest,
 			Msg:    "invalid credentials",
 		},
 	}
 }
 
-func BadRequestError() *Error {
-	return &Error{
-		GenericResponse: &GenericResponse{
+func BadRequestError(errorMessage string) *types.Error {
+	msg := http.StatusText(http.StatusBadRequest)
+	if errorMessage != "" {
+		msg = errorMessage
+	}
+	return &types.Error{
+		GenericResponse: &types.GenericResponse{
 			Status: http.StatusBadRequest,
-			Msg:    http.StatusText(http.StatusBadRequest),
+			Msg:    msg,
+		},
+	}
+}
+
+func InternalServerError(errorMessage string) *types.Error {
+	msg := http.StatusText(http.StatusInternalServerError)
+	if errorMessage != "" {
+		msg = errorMessage
+	}
+	return &types.Error{
+		GenericResponse: &types.GenericResponse{
+			Status: http.StatusInternalServerError,
+			Msg:    msg,
 		},
 	}
 }

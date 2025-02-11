@@ -8,7 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const userCollection = "users"
@@ -18,7 +17,7 @@ type UserStore interface {
 
 	GetByID(context.Context, string) (*types.User, error)
 	GetUserByEmail(context.Context, string) (*types.User, error)
-	GetUsers(context.Context, *types.PaginationDTO) ([]*types.User, error)
+	GetUsers(context.Context, *types.PaginationQuery) ([]*types.User, int64, error)
 	InsertUser(context.Context, *types.User) (*types.User, error)
 	DeleteUser(context.Context, string) error
 	PutUser(context.Context, *types.UpdateUserParams, string) (int64, error)
@@ -60,26 +59,43 @@ func (ms *MongoUserStore) GetUserByEmail(ctx context.Context, email string) (*ty
 	return &user, nil
 }
 
-func (ms *MongoUserStore) GetUsers(ctx context.Context, pagination *types.PaginationDTO) ([]*types.User, error) {
-	opts := &options.FindOptions{
-		Limit: &pagination.Limit,
-		Skip:  &pagination.Offset,
+func (ms *MongoUserStore) GetUsers(ctx context.Context, pagination *types.PaginationQuery) ([]*types.User, int64, error) {
+	pipeline := mongo.Pipeline{
+		bson.D{{Key: "$match", Value: bson.D{}}},
+		bson.D{{Key: "$facet", Value: bson.D{
+			{Key: "data", Value: bson.A{
+				bson.D{{Key: "$skip", Value: pagination.Page}},
+				bson.D{{Key: "$limit", Value: pagination.Limit}},
+			}},
+			{Key: "totalCount", Value: bson.A{
+				bson.D{{Key: "$count", Value: "count"}},
+			}},
+		}}},
+		bson.D{{Key: "$project", Value: bson.D{
+			{Key: "data", Value: 1},
+			{Key: "totalCount", Value: bson.D{
+				{Key: "$arrayElemAt", Value: bson.A{"$totalCount.count", 0}},
+			}},
+		}}},
 	}
-	cur, err := ms.coll.Find(ctx, bson.M{}, opts)
+	cur, err := ms.coll.Aggregate(ctx, pipeline)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	var users []*types.User
-	if err := cur.All(ctx, &users); err != nil {
-		return nil, err
+	var aggResult []struct {
+		Data       []*types.User `bson:"data"`
+		TotalCount int64         `bson:"totalCount"`
+	}
+	if err := cur.All(ctx, &aggResult); err != nil {
+		return nil, 0, err
 	}
 
-	if len(users) == 0 {
-		return []*types.User{}, nil
+	if len(aggResult) == 0 {
+		return []*types.User{}, 0, nil
 	}
 
-	return users, nil
+	return aggResult[0].Data, aggResult[0].TotalCount, nil
 }
 
 func (ms *MongoUserStore) InsertUser(ctx context.Context, user *types.User) (*types.User, error) {

@@ -1,4 +1,4 @@
-package utils
+package types
 
 type GenericResponse struct {
 	Msg    string                 `json:"msg,omitempty"`
@@ -10,12 +10,7 @@ type GenericResponse struct {
 }
 
 type PaginationResponse struct {
-	Count   int         `json:"count"`
-	Results interface{} `json:"results"`
-	Offset  int64       `json:"offset"`
-}
-
-type HotelQueryParams struct {
-	Rooms  bool
-	Rating int
+	Count int64 `json:"count"`
+	Page  int64 `json:"page"`
+	Limit int64 `json:"limit"`
 }

@@ -5,7 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/etag"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/tnguven/hotel-reservation-app/internals/utils"
+	"github.com/tnguven/hotel-reservation-app/internals/types"
 )
 
 type ErrorResponse struct {
@@ -15,12 +15,12 @@ type ErrorResponse struct {
 func NewServer(withLog bool, env string) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			if response, ok := err.(*utils.Error); ok {
+			if response, ok := err.(*types.Error); ok {
 				return c.Status(response.Status).JSON(&response)
 			}
 
 			return c.Status(fiber.StatusInternalServerError).
-				JSON(utils.NewError(err, fiber.StatusInternalServerError, ""))
+				JSON(types.NewError(err, fiber.StatusInternalServerError, ""))
 		},
 	})
 

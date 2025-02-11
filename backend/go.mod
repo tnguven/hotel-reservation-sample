@@ -6,6 +6,7 @@ require (
 	github.com/go-playground/validator/v10 v10.24.0
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/joho/godotenv v1.5.1
 	go.mongodb.org/mongo-driver v1.17.2
 	golang.org/x/crypto v0.33.0
 )
@@ -17,7 +18,6 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect

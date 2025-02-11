@@ -25,7 +25,7 @@ func TestPostUser(t *testing.T) {
 		type test struct {
 			desc     string
 			input    *types.CreateUserParams
-			expected *utils.Error
+			expected *types.Error
 			status   int
 		}
 
@@ -66,8 +66,8 @@ func TestPostUser(t *testing.T) {
 				desc:   "Should return all required fields error",
 				input:  partialInput,
 				status: 400,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -83,8 +83,8 @@ func TestPostUser(t *testing.T) {
 				desc:   "Should return invalid email field error",
 				input:  invalidEmail,
 				status: 400,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -97,8 +97,8 @@ func TestPostUser(t *testing.T) {
 				desc:   "Should return invalid firstName and lastName minimum field error",
 				input:  invalidMinNames,
 				status: 400,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -112,8 +112,8 @@ func TestPostUser(t *testing.T) {
 				desc:   "Should return invalid firstName and lastName maximum field error",
 				input:  invalidMaxNames,
 				status: 400,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -127,8 +127,8 @@ func TestPostUser(t *testing.T) {
 				desc:   "Should return invalid firstName and lastName maximum field error",
 				input:  invalidAlphaNames,
 				status: 400,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -142,8 +142,8 @@ func TestPostUser(t *testing.T) {
 				desc:   "Should return invalid password min field error",
 				input:  invalidPassword,
 				status: 400,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -175,7 +175,7 @@ func TestPostUser(t *testing.T) {
 
 			t.Run(tc.desc, func(t *testing.T) {
 				t.Parallel()
-				var body utils.Error
+				var body types.Error
 				if errDecode := json.NewDecoder(resp.Body).Decode(&body); errDecode != nil {
 					t.Fatal(errDecode)
 				}
@@ -205,7 +205,7 @@ func TestPostUser(t *testing.T) {
 			t.Error(err)
 		}
 
-		var result utils.GenericResponse
+		var result types.GenericResponse
 		if errDecode := json.NewDecoder(resp.Body).Decode(&result); errDecode != nil {
 			t.Fatal(errDecode)
 		}
@@ -280,7 +280,7 @@ func TestHandleGetUser(t *testing.T) {
 			t.Error(err)
 		}
 
-		var result utils.GenericResponse
+		var result types.GenericResponse
 		if errDecode := json.NewDecoder(resp.Body).Decode(&result); errDecode != nil {
 			t.Fatal(errDecode)
 		}
@@ -340,7 +340,7 @@ func TestHandlePutUser(t *testing.T) {
 			id       string
 			input    *types.UpdateUserParams
 			desc     string
-			expected *utils.Error
+			expected *types.Error
 			status   int
 		}
 
@@ -350,8 +350,8 @@ func TestHandlePutUser(t *testing.T) {
 				desc:   "Should return invalid firstName and lastName minimum field error",
 				input:  invalidMinFields,
 				status: 400,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -366,8 +366,8 @@ func TestHandlePutUser(t *testing.T) {
 				desc:   "Should return invalid firstName and lastName maximum field error",
 				input:  invalidMaxFields,
 				status: 400,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -382,8 +382,8 @@ func TestHandlePutUser(t *testing.T) {
 				desc:   "Should return invalid firstName and lastName maximum field error",
 				input:  invalidAlphaFields,
 				status: 400,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -398,8 +398,8 @@ func TestHandlePutUser(t *testing.T) {
 				input:  validParams,
 				desc:   "must return required and invalid fields",
 				status: 400,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -431,7 +431,7 @@ func TestHandlePutUser(t *testing.T) {
 
 			t.Run(tc.desc, func(t *testing.T) {
 				t.Parallel()
-				var body utils.Error
+				var body types.Error
 				if errDecode := json.NewDecoder(resp.Body).Decode(&body); errDecode != nil {
 					t.Fatal(errDecode)
 				}
@@ -460,7 +460,7 @@ func TestHandlePutUser(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		var result utils.GenericResponse
+		var result types.GenericResponse
 		if errDecode := json.NewDecoder(resp.Body).Decode(&result); errDecode != nil {
 			t.Fatal(errDecode)
 		}
@@ -487,7 +487,7 @@ func TestHandlePutUser(t *testing.T) {
 			t.Error(err)
 		}
 
-		var response utils.GenericResponse
+		var response types.GenericResponse
 		if errDecode := json.NewDecoder(resp.Body).Decode(&response); errDecode != nil {
 			t.Fatal(errDecode)
 		}

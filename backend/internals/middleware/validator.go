@@ -1,6 +1,8 @@
 package middleware
 
 import (
+	"fmt"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/tnguven/hotel-reservation-app/internals/utils"
@@ -33,18 +35,22 @@ func validateObjectID(fl validator.FieldLevel) bool {
 	return err == nil
 }
 
-type SchemaFunc = func(c *fiber.Ctx) (interface{}, error)
+type SchemaFunc = func(c *fiber.Ctx) (interface{}, string, error)
 
 func WithValidation(v *Validator, getSchema SchemaFunc) fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-		schema, err := getSchema(ctx)
+	return func(c *fiber.Ctx) error {
+		schema, name, err := getSchema(c)
 		if err != nil {
+			fmt.Println("ERROR HERE", err.Error())
 			return err
 		}
 		if err := v.Validate(schema); err != nil {
 			return utils.ValidatorError(err)
 		}
 
-		return ctx.Next()
+		fmt.Println(name, "-----", schema)
+
+		c.Locals(name, schema)
+		return c.Next()
 	}
 }

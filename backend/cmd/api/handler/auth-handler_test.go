@@ -38,7 +38,7 @@ func TestHandleAuthenticate(t *testing.T) {
 		type test struct {
 			desc     string
 			input    *types.AuthParams
-			expected *utils.Error
+			expected *types.Error
 			status   int
 		}
 
@@ -46,8 +46,8 @@ func TestHandleAuthenticate(t *testing.T) {
 			{
 				desc:  "should return invalid email error",
 				input: invalidEmail,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -60,8 +60,8 @@ func TestHandleAuthenticate(t *testing.T) {
 			{
 				desc:  "should return invalid password error",
 				input: invalidPassword,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -74,8 +74,8 @@ func TestHandleAuthenticate(t *testing.T) {
 			{
 				desc:  "should return invalid password error",
 				input: invalidBoth,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -110,7 +110,7 @@ func TestHandleAuthenticate(t *testing.T) {
 
 			t.Run(test.desc, func(t *testing.T) {
 				t.Parallel()
-				var body utils.Error
+				var body types.Error
 				if errDecode := json.NewDecoder(resp.Body).Decode(&body); errDecode != nil {
 					t.Fatal(errDecode)
 				}
@@ -144,7 +144,7 @@ func TestHandleAuthenticate(t *testing.T) {
 			t.Fatalf("expected http status of 200 but got %d", resp.StatusCode)
 		}
 
-		var result utils.GenericResponse
+		var result types.GenericResponse
 		if errDecode := json.NewDecoder(resp.Body).Decode(&result); errDecode != nil {
 			t.Fatal(errDecode)
 		}
@@ -195,7 +195,7 @@ func TestHandleAuthenticate(t *testing.T) {
 			t.Fatalf("expected http status of 400 but got %d", resp.StatusCode)
 		}
 
-		var result utils.Error
+		var result types.Error
 		if decodeErr := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 			t.Fatal(decodeErr)
 		}
@@ -218,7 +218,7 @@ func TestHandleSignin(t *testing.T) {
 		type test struct {
 			desc     string
 			input    *types.CreateUserParams
-			expected *utils.Error
+			expected *types.Error
 			status   int
 		}
 
@@ -258,8 +258,8 @@ func TestHandleSignin(t *testing.T) {
 				desc:   "Should return all required fields error",
 				input:  partialInput,
 				status: 400,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -275,8 +275,8 @@ func TestHandleSignin(t *testing.T) {
 				desc:   "Should return invalid email field error",
 				input:  invalidEmail,
 				status: 400,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -289,8 +289,8 @@ func TestHandleSignin(t *testing.T) {
 				desc:   "Should return invalid firstName and lastName minimum field error",
 				input:  invalidMinNames,
 				status: 400,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -304,8 +304,8 @@ func TestHandleSignin(t *testing.T) {
 				desc:   "Should return invalid firstName and lastName maximum field error",
 				input:  invalidMaxNames,
 				status: 400,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -319,8 +319,8 @@ func TestHandleSignin(t *testing.T) {
 				desc:   "Should return invalid firstName and lastName maximum field error",
 				input:  invalidAlphaNames,
 				status: 400,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -334,8 +334,8 @@ func TestHandleSignin(t *testing.T) {
 				desc:   "Should return invalid password min field error",
 				input:  invalidPassword,
 				status: 400,
-				expected: &utils.Error{
-					GenericResponse: &utils.GenericResponse{
+				expected: &types.Error{
+					GenericResponse: &types.GenericResponse{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -367,7 +367,7 @@ func TestHandleSignin(t *testing.T) {
 
 			t.Run(tc.desc, func(t *testing.T) {
 				t.Parallel()
-				var body utils.Error
+				var body types.Error
 				if errDecode := json.NewDecoder(resp.Body).Decode(&body); errDecode != nil {
 					t.Fatal(errDecode)
 				}
@@ -398,7 +398,7 @@ func TestHandleSignin(t *testing.T) {
 			t.Error(err)
 		}
 
-		var result utils.GenericResponse
+		var result types.GenericResponse
 		if errDecode := json.NewDecoder(resp.Body).Decode(&result); errDecode != nil {
 			t.Fatal(errDecode)
 		}
