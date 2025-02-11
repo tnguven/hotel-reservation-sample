@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/joho/godotenv"
 	"github.com/tnguven/hotel-reservation-app/cmd/api/handler"
@@ -29,7 +31,16 @@ func main() {
 		log.Println("Error loading .env file")
 	}
 
+	env := os.Getenv("ENV")
+
+	if len(env) == 0 {
+		env = "development"
+	}
+
+	fmt.Println("ENV: ", env)
+
 	configs := config.New().
+		WithEnv(env).
 		// WithDbUserName("admin").
 		// WithDbPassword("secret").
 		Validate()
@@ -38,8 +49,7 @@ func main() {
 	client, database := repo.NewMongoClient(rootCtx, configs)
 
 	var (
-		withLog      = true
-		route        = server.NewServer(withLog)
+		route        = server.NewServer(configs.Log, configs.Env)
 		userStore    = store.NewMongoUserStore(database)
 		hotelStore   = store.NewMongoHotelStore(database)
 		roomStore    = store.NewMongoRoomStore(database, hotelStore) // TODO refactor this shenanigan

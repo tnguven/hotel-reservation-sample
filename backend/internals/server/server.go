@@ -12,7 +12,7 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
-func NewServer(withLog bool) *fiber.App {
+func NewServer(withLog bool, env string) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			if response, ok := err.(*utils.Error); ok {
@@ -31,11 +31,13 @@ func NewServer(withLog bool) *fiber.App {
 		}))
 	}
 
-	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
-		AllowHeaders: "Origin, Content-Type/application/json, Accept, ,",
-		AllowMethods: "GET, HEAD, PUT, PATCH, POST, DELETE",
-	}))
+	if env != "production" {
+		app.Use(cors.New(cors.Config{
+			AllowOrigins: "*", // TODO for development
+			AllowHeaders: "Origin, Content-Type/application/json, Accept, ,",
+			AllowMethods: "GET, HEAD, PUT, PATCH, POST, DELETE",
+		}))
+	}
 
 	return app
 }

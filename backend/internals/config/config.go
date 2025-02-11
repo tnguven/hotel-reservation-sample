@@ -17,6 +17,8 @@ type Configs struct {
 	JWTSecret    string
 	TokenExpHour int64
 	Port         string
+	Log          bool
+	Env          string
 }
 
 func (conf *Configs) WithDbURI(dbURI string) *Configs {
@@ -54,6 +56,11 @@ func (conf *Configs) WithPort(port string) *Configs {
 	return conf
 }
 
+func (conf *Configs) WithEnv(env string) *Configs {
+	conf.Env = env
+	return conf
+}
+
 func (conf *Configs) Validate() *Configs {
 	if conf.Port == "" {
 		log.Fatal(errors.New("missing port"))
@@ -76,5 +83,7 @@ func New() *Configs {
 		TokenExpHour: 72,
 		DbName:       "hotel_io",
 		Port:         ":5000",
+		Log:          true,
+		Env:          "development",
 	}
 }

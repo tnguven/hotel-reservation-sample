@@ -86,7 +86,7 @@ func Setup(db *mongo.Database, withLog bool, configs *config.Configs) (*TestDb, 
 		db: db,
 	}
 
-	app := server.NewServer(withLog)
+	app := server.NewServer(withLog, "test")
 
 	validator, _ := mid.NewValidator()
 	handlers := NewHandler(tdb.Store)
