@@ -48,8 +48,6 @@ func WithValidation(v *Validator, getSchema SchemaFunc) fiber.Handler {
 			return utils.ValidatorError(err)
 		}
 
-		fmt.Println(name, "-----", schema)
-
 		c.Locals(name, schema)
 		return c.Next()
 	}
