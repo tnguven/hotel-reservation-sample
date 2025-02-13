@@ -46,13 +46,8 @@ type HotelQueryParams struct {
 	*PaginationQuery
 }
 
-func NewHotelQueryParam(rooms bool, rating int, page int64, limit int64) HotelQueryParams {
-	return HotelQueryParams{
-		Rooms:  false,
-		Rating: 0,
-		PaginationQuery: &PaginationQuery{
-			Limit: page,
-			Page:  (page - 1) * limit,
-		},
-	}
+type GetHotelsRequest struct {
+	Rooms  bool `validate:"boolean,omitempty" query:"room"`
+	Rating int  `validate:"numeric,omitempty" query:"rating"`
+	*PaginationQuery
 }

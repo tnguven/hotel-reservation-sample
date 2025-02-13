@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/tnguven/hotel-reservation-app/internals/types"
@@ -12,18 +13,14 @@ import (
 )
 
 func (h *Handler) HandleGetHotels(c *fiber.Ctx) error {
-	var (
-		showRooms    = true
-		filterRating = 0
-		page         = int64(1)
-		limit        = int64(10)
-	)
-	qParams := types.NewHotelQueryParam(showRooms, filterRating, page, limit)
-	if err := c.QueryParser(&qParams); err != nil {
-		log.Error("Error parsing query parameters", err)
+	qParams, ok := c.Locals(getHotelsRequestKey).(*types.GetHotelsRequest)
+	if !ok {
+		log.Errorf("locals %s field missing", getHotelRequestKey)
+		return utils.BadRequestError("")
 	}
+	fmt.Printf("qPARAMS: %+v", qParams)
 
-	hotels, total, err := h.hotelStore.GetHotels(c.Context(), &qParams)
+	hotels, total, err := h.hotelStore.GetHotels(c.Context(), qParams)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return utils.NotFoundError()

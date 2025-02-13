@@ -18,7 +18,7 @@ type HotelStore interface {
 
 	InsertHotel(context.Context, *types.Hotel) (*types.Hotel, error)
 	PutHotel(context.Context, *types.UpdateHotelParams, *primitive.ObjectID) error
-	GetHotels(context.Context, *types.HotelQueryParams) ([]*types.Hotel, int64, error)
+	GetHotels(context.Context, *types.GetHotelsRequest) ([]*types.Hotel, int64, error)
 	GetHotelByID(context.Context, string) (*types.Hotel, error)
 }
 
@@ -34,13 +34,13 @@ func NewMongoHotelStore(db *mongo.Database) *MongoHotelStore {
 	}
 }
 
-func (ms *MongoHotelStore) GetHotels(ctx context.Context, qParams *types.HotelQueryParams) ([]*types.Hotel, int64, error) {
+func (ms *MongoHotelStore) GetHotels(ctx context.Context, qParams *types.GetHotelsRequest) ([]*types.Hotel, int64, error) {
 	pipeline := mongo.Pipeline{
 		bson.D{{Key: "$match", Value: bson.D{}}},
 		bson.D{{Key: "$facet", Value: bson.D{
 			{Key: "data", Value: bson.A{
-				bson.D{{Key: "$skip", Value: &qParams.Page}},
-				bson.D{{Key: "$limit", Value: &qParams.Limit}},
+				bson.D{{Key: "$skip", Value: &qParams.PaginationQuery.Page}},
+				bson.D{{Key: "$limit", Value: &qParams.PaginationQuery.Limit}},
 			}},
 			{Key: "totalCount", Value: bson.A{
 				bson.D{{Key: "$count", Value: "count"}},
