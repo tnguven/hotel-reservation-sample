@@ -10,14 +10,14 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/tnguven/hotel-reservation-app/cmd/api/handler"
+	"github.com/tnguven/hotel-reservation-app/cmd/svc-api/handler"
 	"github.com/tnguven/hotel-reservation-app/db/fixtures"
 	"github.com/tnguven/hotel-reservation-app/internals/types"
 	"github.com/tnguven/hotel-reservation-app/internals/utils"
 )
 
 func TestHandleAuthenticate(t *testing.T) {
-	tdb, app := handler.Setup(db, false, configs)
+	tdb, app := handler.Setup(mDatabase, false, configs)
 	const target = "/v1/auth"
 
 	t.Run("Validations", func(t *testing.T) {
@@ -209,7 +209,7 @@ func TestHandleAuthenticate(t *testing.T) {
 }
 
 func TestHandleSignin(t *testing.T) {
-	tdb, app := handler.Setup(db, false, configs)
+	tdb, app := handler.Setup(mDatabase, false, configs)
 	const target = "/v1/auth/signin"
 	invalidMaxCharName := strings.Repeat("a", 49)
 

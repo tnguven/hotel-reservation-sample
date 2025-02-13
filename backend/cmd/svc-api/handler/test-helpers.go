@@ -8,21 +8,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/tnguven/hotel-reservation-app/internals/config"
 	mid "github.com/tnguven/hotel-reservation-app/internals/middleware"
+	"github.com/tnguven/hotel-reservation-app/internals/repo"
 	"github.com/tnguven/hotel-reservation-app/internals/server"
 	"github.com/tnguven/hotel-reservation-app/internals/store"
 	"github.com/tnguven/hotel-reservation-app/internals/types"
 	"github.com/tnguven/hotel-reservation-app/internals/utils"
 	"go.mongodb.org/mongo-driver/mongo"
 )
-
-func GetAuthenticatedUser(c *fiber.Ctx) (*types.User, error) {
-	user, ok := c.Context().UserValue("user").(*types.User)
-	if !ok {
-		return nil, fmt.Errorf("unauthorized")
-	}
-
-	return user, nil
-}
 
 type TestDb struct {
 	Store *store.Stores
@@ -71,7 +63,7 @@ func (tdb *TestDb) TearDown(t *testing.T) {
 }
 
 // mimic the real implementation to test the integration also
-func Setup(db *mongo.Database, withLog bool, configs *config.Configs) (*TestDb, *fiber.App) {
+func Setup(db *repo.MongoDatabase, withLog bool, configs *config.Configs) (*TestDb, *fiber.App) {
 	hotelStore := store.NewMongoHotelStore(db)
 	roomStore := store.NewMongoRoomStore(db, hotelStore)
 	bookingStore := store.NewMongoBookingStore(db, roomStore)
@@ -83,7 +75,7 @@ func Setup(db *mongo.Database, withLog bool, configs *config.Configs) (*TestDb, 
 			Room:    roomStore,
 			Booking: bookingStore,
 		},
-		db: db,
+		db: db.GetDb(),
 	}
 
 	app := server.NewServer(withLog, "test")
@@ -93,4 +85,13 @@ func Setup(db *mongo.Database, withLog bool, configs *config.Configs) (*TestDb, 
 	handlers.Register(app, configs, validator)
 
 	return tdb, app
+}
+
+func GetAutheVnticatedUser(c *fiber.Ctx) (*types.User, error) {
+	user, ok := c.Context().UserValue("user").(*types.User)
+	if !ok {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	return user, nil
 }

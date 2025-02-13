@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"github.com/tnguven/hotel-reservation-app/internals/repo"
 	"github.com/tnguven/hotel-reservation-app/internals/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -28,10 +29,10 @@ type MongoUserStore struct {
 	coll *mongo.Collection
 }
 
-func NewMongoUserStore(db *mongo.Database) *MongoUserStore {
+func NewMongoUserStore(mongodb *repo.MongoDatabase) *MongoUserStore {
 	return &MongoUserStore{
-		db:   db,
-		coll: db.Collection(userCollection),
+		db:   mongodb.GetDb(),
+		coll: mongodb.Coll(userCollection),
 	}
 }
 

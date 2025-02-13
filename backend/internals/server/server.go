@@ -33,7 +33,7 @@ func NewServer(withLog bool, env string) *fiber.App {
 
 	if env != "production" {
 		app.Use(cors.New(cors.Config{
-			AllowOrigins: "*", // TODO for development
+			AllowOrigins: "*",
 			AllowHeaders: "Origin, Content-Type/application/json, Accept, ,",
 			AllowMethods: "GET, HEAD, PUT, PATCH, POST, DELETE",
 		}))

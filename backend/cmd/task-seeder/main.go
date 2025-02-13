@@ -3,40 +3,37 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"sync"
 	"time"
 
+	"github.com/joho/godotenv"
+	"github.com/tnguven/hotel-reservation-app/db"
 	"github.com/tnguven/hotel-reservation-app/db/fixtures"
 	"github.com/tnguven/hotel-reservation-app/internals/config"
 	"github.com/tnguven/hotel-reservation-app/internals/repo"
 	"github.com/tnguven/hotel-reservation-app/internals/store"
 	"github.com/tnguven/hotel-reservation-app/internals/types"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var (
-	ctx     = context.Background()
-	dbStore store.Stores
-	client  *mongo.Client
-)
+func main() {
+	if err := godotenv.Load(".env"); err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
-func init() {
-	configs := config.New().
-		// WithDbUserName("admin").
-		// WithDbPassword("secret").
-		Validate()
+	var (
+		ctx          = context.Background()
+		configs      = config.New().Validate().Debug()
+		mongodb      = repo.NewMongoDatabase(ctx, configs)
+		userStore    = store.NewMongoUserStore(mongodb)
+		hotelStore   = store.NewMongoHotelStore(mongodb)
+		roomStore    = store.NewMongoRoomStore(mongodb, hotelStore)
+		bookingStore = store.NewMongoBookingStore(mongodb, roomStore)
+	)
 
-	mClient, database := repo.NewMongoClient(ctx, configs)
-	client = mClient
-
-	userStore := store.NewMongoUserStore(database)
-	hotelStore := store.NewMongoHotelStore(database)
-	roomStore := store.NewMongoRoomStore(database, hotelStore)
-	bookingStore := store.NewMongoBookingStore(database, roomStore)
-
-	dbStore = store.Stores{
+	dbStore := store.Stores{
 		User:    userStore,
 		Hotel:   hotelStore,
 		Room:    roomStore,
@@ -47,16 +44,14 @@ func init() {
 	hotelStore.Drop(ctx)
 	roomStore.Drop(ctx)
 	bookingStore.Drop(ctx)
-}
 
-func main() {
-	defer client.Disconnect(context.TODO())
-	admin := fixtures.AddUser(dbStore, "Tan", "Guven", true)
+	defer mongodb.CloseConnection(ctx)
+	admin := fixtures.AddUser(dbStore, "Test", "test", true)
 	fmt.Println("admin => ", admin.ID)
-	user := fixtures.AddUser(dbStore, "Can", "Guven", false)
+	user := fixtures.AddUser(dbStore, "Test1", "Test2", false)
 	fmt.Println("user => ", user.ID)
-	fixtures.AddUser(dbStore, "Fatos", "Guven", false)
-	fixtures.AddUser(dbStore, "Leo", "Guven", false)
+	fixtures.AddUser(dbStore, "Test3", "Test3", false)
+	fixtures.AddUser(dbStore, "Test4", "Test4", false)
 
 	hotels := [][]string{
 		{"Hilton", "Germany"},
@@ -94,27 +89,27 @@ func main() {
 	wg := sync.WaitGroup{}
 
 	for _, h := range hotels {
-		hotel := fixtures.AddHotel(dbStore, h[0], h[1], randIntGenerator(1, 10), nil)
+		hotel := fixtures.AddHotel(dbStore, h[0], h[1], rngInt(1, 10), nil)
 		rooms := []types.Room{
 			{
 				Type:      types.FamilyRoomType,
-				BasePrice: randomFloatGenerator(100.99, 200.99),
+				BasePrice: rngFloat(100.99, 200.99),
 			},
 			{
 				Type:      types.SuiteRoomType,
-				BasePrice: randomFloatGenerator(200.99, 250.99),
+				BasePrice: rngFloat(200.99, 250.99),
 			},
 			{
 				Type:      types.FamilySuitRoomType,
-				BasePrice: randomFloatGenerator(250.99, 300.99),
+				BasePrice: rngFloat(250.99, 300.99),
 			},
 			{
 				Type:      types.HoneyMoonRoomType,
-				BasePrice: randomFloatGenerator(300.99, 350.99),
+				BasePrice: rngFloat(300.99, 350.99),
 			},
 			{
 				Type:      types.KingRoomType,
-				BasePrice: randomFloatGenerator(350.99, 700.99),
+				BasePrice: rngFloat(350.99, 700.99),
 			},
 		}
 
@@ -123,8 +118,14 @@ func main() {
 			go func() {
 				defer wg.Done()
 				insertedRoom := fixtures.AddRoom(dbStore, room.Type, hotel.ID, room.BasePrice)
-				if randIntGenerator(1, 10) > 5 {
-					booked := fixtures.AddBooking(dbStore, user.ID, insertedRoom.ID.Hex(), time.Now(), time.Now().AddDate(0, 0, randIntGenerator(1, 10)))
+				if rngInt(1, 10) > 5 {
+					booked := fixtures.AddBooking(
+						dbStore,
+						user.ID,
+						insertedRoom.ID.Hex(),
+						time.Now(),
+						time.Now().AddDate(0, 0, rngInt(1, 10)),
+					)
 					fmt.Println("booking =>", booked.ID)
 				}
 			}()
@@ -132,14 +133,15 @@ func main() {
 	}
 
 	wg.Wait()
+	db.CreateIndexes(ctx, mongodb.GetDb())
 }
 
-func randomFloatGenerator(min float64, max float64) float64 {
+func rngFloat(min float64, max float64) float64 {
 	randFloat := rand.Float64()*(max-min) + min
 	return math.Trunc(randFloat*100) / 100 // right padding 2
 }
 
-func randIntGenerator(min int, max int) int {
+func rngInt(min int, max int) int {
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	return rng.Intn(max-min+1) + min
 }

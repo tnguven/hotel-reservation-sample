@@ -56,7 +56,8 @@ func (h *Handler) isBookAvailableForBooking(ctx context.Context, params *types.B
 }
 
 func (h *Handler) HandleGetRooms(c *fiber.Ctx) error {
-	rooms, err := h.roomStore.GetRooms(c.Context())
+	qParams := c.Locals(getRoomsRequstKey).(*types.GetRoomsRequest)
+	rooms, total, err := h.roomStore.GetRooms(c.Context(), qParams)
 	if err != nil {
 		return types.NewError(err, fiber.StatusInternalServerError, "Error getting rooms")
 	}
@@ -64,5 +65,10 @@ func (h *Handler) HandleGetRooms(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
 		Data:   &rooms,
 		Status: fiber.StatusOK,
+		PaginationResponse: &types.PaginationResponse{
+			Count: total,
+			Limit: qParams.Limit,
+			Page:  qParams.Page,
+		},
 	})
 }

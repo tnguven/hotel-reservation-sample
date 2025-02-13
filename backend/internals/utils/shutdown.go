@@ -12,7 +12,6 @@ func GraceFullyShutDown(rootCtx context.Context, cleanup func(ctx context.Contex
 	shutdown, stop := signal.NotifyContext(rootCtx, syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
 
-	// waiting to have a disrupt
 	<-shutdown.Done()
 
 	log.Println("gracefully shutting down in progress...")

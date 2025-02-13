@@ -7,14 +7,14 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/tnguven/hotel-reservation-app/cmd/api/handler"
+	"github.com/tnguven/hotel-reservation-app/cmd/svc-api/handler"
 	"github.com/tnguven/hotel-reservation-app/db/fixtures"
 	"github.com/tnguven/hotel-reservation-app/internals/types"
 	"github.com/tnguven/hotel-reservation-app/internals/utils"
 )
 
 func TestHandleGetBookings(t *testing.T) {
-	tdb, app := handler.Setup(db, false, configs)
+	tdb, app := handler.Setup(mDatabase, false, configs)
 
 	var (
 		user  = fixtures.AddUser(*tdb.Store, "get", "booking", false)

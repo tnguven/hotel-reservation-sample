@@ -8,12 +8,11 @@ import (
 
 	"github.com/tnguven/hotel-reservation-app/internals/config"
 	"github.com/tnguven/hotel-reservation-app/internals/repo"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func NewDb(config *config.Configs) (*mongo.Client, *mongo.Database) {
+func NewDb(config *config.Configs) *repo.MongoDatabase {
 	ctx := context.Background()
-	return repo.NewMongoClient(ctx, config)
+	return repo.NewMongoDatabase(ctx, config)
 }
 
 type TestRequest struct {

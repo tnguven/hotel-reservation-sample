@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/tnguven/hotel-reservation-app/internals/repo"
 	"github.com/tnguven/hotel-reservation-app/internals/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -32,10 +33,10 @@ type MongoBookingStore struct {
 	RoomStore
 }
 
-func NewMongoBookingStore(db *mongo.Database, roomStore RoomStore) *MongoBookingStore {
+func NewMongoBookingStore(mongodb *repo.MongoDatabase, roomStore RoomStore) *MongoBookingStore {
 	return &MongoBookingStore{
-		db:   db,
-		coll: db.Collection(bookingCollection),
+		db:   mongodb.GetDb(),
+		coll: mongodb.Coll(bookingCollection),
 
 		RoomStore: roomStore,
 	}

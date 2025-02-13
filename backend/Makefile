@@ -1,14 +1,11 @@
-BUILD_DIR="./.bin/api"
+BUILD_DIR="./.bin/svc-api"
 GO_FLAGS=GOEXPERIMENT=rangefunc
 
 build:
-	@${GO_FLAGS} go build -o .bin/api cmd/api/main.go
+	@${GO_FLAGS} go build -o .bin/svc-api cmd/svc-api/
 
 run: build
 	@${GO_FLAGS} "${BUILD_DIR}"
-
-# test:
-# 	@go test -v ./... -count=1
 
 test-rerun:
 	@${GO_FLAGS} go run gotest.tools/gotestsum@latest --debug --format testname --rerun-fails --packages="./..." -- -count=2
@@ -23,4 +20,4 @@ test-only:
 	@${GO_FLAGS} go run gotest.tools/gotestsum@latest --debug --format standard-verbose --watch --packages="./..." -- --run $(TEST_NAME) -count=1
 
 seed:
-	@${GO_FLAGS} go run ./scripts/seed.go
+	@${GO_FLAGS} go run ./cmd/task-seeder

@@ -1,43 +1,33 @@
 package config
 
 import (
+	"cmp"
 	"errors"
+	"fmt"
 	"log"
-)
+	"os"
+	"strconv"
 
-const (
-	dbUri = "mongodb://localhost:27017"
+	"github.com/tnguven/hotel-reservation-app/internals/must"
 )
 
 type Configs struct {
-	DbURI        string
-	DbName       string
-	DbUserName   string
-	DbPassword   string
+	MongoDbURI   string
+	MongoDbName  string
 	JWTSecret    string
 	TokenExpHour int64
-	Port         string
+	ListenAddr   string
 	Log          bool
 	Env          string
 }
 
-func (conf *Configs) WithDbURI(dbURI string) *Configs {
-	conf.DbURI = dbURI
+func (conf *Configs) WithMongoDbURI(dbURI string) *Configs {
+	conf.MongoDbURI = dbURI
 	return conf
 }
 
 func (conf *Configs) WithDbName(dbName string) *Configs {
-	conf.DbName = dbName
-	return conf
-}
-
-func (conf *Configs) WithDbUserName(username string) *Configs {
-	conf.DbUserName = username
-	return conf
-}
-
-func (conf *Configs) WithDbPassword(password string) *Configs {
-	conf.DbPassword = password
+	conf.MongoDbName = dbName
 	return conf
 }
 
@@ -51,8 +41,8 @@ func (conf *Configs) WithTokenExpirationHours(hour int64) *Configs {
 	return conf
 }
 
-func (conf *Configs) WithPort(port string) *Configs {
-	conf.Port = port
+func (conf *Configs) WithListenAddr(addr string) *Configs {
+	conf.ListenAddr = addr
 	return conf
 }
 
@@ -62,28 +52,34 @@ func (conf *Configs) WithEnv(env string) *Configs {
 }
 
 func (conf *Configs) Validate() *Configs {
-	if conf.Port == "" {
-		log.Fatal(errors.New("missing port"))
+	if conf.ListenAddr == "" {
+		log.Fatal(errors.New("missing listen addr"))
 	}
 
-	if conf.DbName == "" {
-		log.Fatal(errors.New("missing database name"))
+	if conf.MongoDbName == "" {
+		log.Fatal(errors.New("missing mongo database name"))
 	}
 
-	if conf.DbURI == "" {
-		log.Fatal(errors.New("missing database URI"))
+	if conf.MongoDbURI == "" {
+		log.Fatal(errors.New("missing mongo database URI"))
 	}
+
+	return conf
+}
+
+func (conf *Configs) Debug() *Configs {
+	fmt.Printf("ENVS: %+v", conf)
 	return conf
 }
 
 func New() *Configs {
 	return &Configs{
-		DbURI:        dbUri,
-		JWTSecret:    "top_secret",
-		TokenExpHour: 72,
-		DbName:       "hotel_io",
-		Port:         ":5000",
+		MongoDbName:  cmp.Or(os.Getenv("MONGO_DATABASE"), "hotel_io_dev"),
+		MongoDbURI:   cmp.Or(os.Getenv("MONGO_URI"), "mongodb://localhost:27017"),
+		JWTSecret:    cmp.Or(os.Getenv("JWT_SECRET"), "top_secret"),
+		TokenExpHour: must.Panic(strconv.ParseInt((cmp.Or(os.Getenv("EXPIRE_IN_HOURS"), "72")), 10, 64)),
+		ListenAddr:   fmt.Sprintf(":%s", cmp.Or(os.Getenv("LISTEN_ADDR"), "5000")),
+		Env:          cmp.Or(os.Getenv("ENV"), "development"),
 		Log:          true,
-		Env:          "development",
 	}
 }

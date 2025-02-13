@@ -28,7 +28,7 @@ func JWTAuthentication(userStore store.UserStore, configs *config.Configs) fiber
 			return utils.UnauthorizedError()
 		}
 
-		c.Context().SetUserValue("user", user)
+		c.Locals("user", user)
 
 		return c.Next()
 	}

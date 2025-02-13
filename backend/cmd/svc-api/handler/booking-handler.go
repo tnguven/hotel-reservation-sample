@@ -53,18 +53,18 @@ func (h *Handler) HandleGetBooking(c *fiber.Ctx) error {
 
 func (h *Handler) HandleCancelBooking(c *fiber.Ctx) error {
 	bookingID := c.Params("bookingID")
-	user, err := GetAuthenticatedUser(c)
-	if err != nil {
+	user, ok := c.Locals("user").(*types.User)
+	if !ok {
 		return utils.UnauthorizedError()
 	}
 
 	if user.IsAdmin {
-		if err = h.bookingStore.CancelBookingByAdmin(c.Context(), bookingID); err != nil {
-			return types.NewError(err, fiber.StatusInternalServerError, "Failed to cancel booking")
+		if err := h.bookingStore.CancelBookingByAdmin(c.Context(), bookingID); err != nil {
+			return utils.InternalServerError("failed to cancel booking id: " + bookingID)
 		}
 	} else {
-		if err = h.bookingStore.CancelBookingByUserID(c.Context(), bookingID, user.ID); err != nil {
-			return types.NewError(err, fiber.StatusInternalServerError, "Failed to cancel booking")
+		if err := h.bookingStore.CancelBookingByUserID(c.Context(), bookingID, user.ID); err != nil {
+			return utils.InternalServerError("failed to cancel booking id: " + bookingID)
 		}
 	}
 

@@ -31,9 +31,10 @@ func (h *Handler) Register(app *fiber.App, configs *config.Configs, validator *m
 	hotelPrivate.Get("/rooms", h.HandleGetRoomsByHotelID)
 
 	roomsPrivate := v1.Group("/rooms", withAutMid)
-	roomsPrivate.Get("/", h.HandleGetRooms)
+	roomsPrivate.Get("/", mid.WithValidation(validator, GetRoomsSchema), h.HandleGetRooms)
 	bookPrivate := roomsPrivate.Group("/:roomID") // TODO: add roomID validation
 	bookPrivate.Post("/book", mid.WithValidation(validator, BookingRoomRequestSchema), h.HandleBookRoom)
+	// TODO cancel a booking
 
 	adminBookings := v1.Group("/admin/bookings", withAutMid)
 	adminBookings.Get("/", mid.WithAdminAuth, h.HandleGetBookingsAsAdmin)

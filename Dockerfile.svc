@@ -1,0 +1,34 @@
+############################################# Build Layer
+FROM golang:1.24-bullseye AS builder
+
+RUN apt-get update
+
+ARG service
+WORKDIR /app
+
+# Copy Go module files and download dependencies
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
+
+# Copy the application code
+COPY ./backend/internals ./internals
+COPY ./backend/db ./db
+COPY ./backend/cmd/${service} ./cmd/${service}
+
+# Build the specified service
+RUN go build -o ${service} ./cmd/${service}
+
+############################################# Runner Layer
+FROM gcr.io/distroless/base-debian12 AS runner
+
+ARG service
+
+WORKDIR /app
+
+COPY example.env .env
+COPY --from=builder /app/${service} ./${service}
+
+LABEL layer="runner"
+ENV SERVICE_NAME "${service}"
+
+CMD ["/app/${SERVICE_NAME}"]

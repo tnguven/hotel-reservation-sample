@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"github.com/tnguven/hotel-reservation-app/internals/repo"
 	"github.com/tnguven/hotel-reservation-app/internals/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -17,7 +18,7 @@ type RoomStore interface {
 
 	InsertRoom(context.Context, *types.Room) (*types.Room, error)
 	GetRoomsByHotelID(context.Context, string) ([]*types.Room, error)
-	GetRooms(context.Context) ([]*types.Room, error)
+	GetRooms(context.Context, *types.GetRoomsRequest) ([]*types.Room, int64, error)
 }
 
 type MongoRoomStore struct {
@@ -27,10 +28,10 @@ type MongoRoomStore struct {
 	HotelStore
 }
 
-func NewMongoRoomStore(db *mongo.Database, hotelStore HotelStore) *MongoRoomStore {
+func NewMongoRoomStore(db *repo.MongoDatabase, hotelStore HotelStore) *MongoRoomStore {
 	return &MongoRoomStore{
-		db:   db,
-		coll: db.Collection(roomCollection),
+		db:   db.GetDb(),
+		coll: db.Coll(roomCollection),
 
 		HotelStore: hotelStore,
 	}
@@ -69,17 +70,43 @@ func (ms *MongoRoomStore) GetRoomsByHotelID(ctx context.Context, hotelID string)
 	return rooms, nil
 }
 
-func (ms *MongoRoomStore) GetRooms(ctx context.Context) ([]*types.Room, error) {
-	resp, err := ms.coll.Find(ctx, bson.M{}) // TODO: limit the query
+func (ms *MongoRoomStore) GetRooms(ctx context.Context, qParams *types.GetRoomsRequest) ([]*types.Room, int64, error) {
+	pipeline := mongo.Pipeline{
+		bson.D{{Key: "$match", Value: bson.D{}}},
+		bson.D{{Key: "$facet", Value: bson.D{
+			{Key: "data", Value: bson.A{
+				bson.D{{Key: "$skip", Value: &qParams.PaginationQuery.Page}},
+				bson.D{{Key: "$limit", Value: &qParams.PaginationQuery.Limit}},
+			}},
+			{Key: "totalCount", Value: bson.A{
+				bson.D{{Key: "$count", Value: "count"}},
+			}},
+		}}},
+		bson.D{{Key: "$project", Value: bson.D{
+			{Key: "data", Value: 1},
+			{Key: "totalCount", Value: bson.D{
+				{Key: "$arrayElemAt", Value: bson.A{"$totalCount.count", 0}},
+			}},
+		}}},
+	}
+	cur, err := ms.coll.Aggregate(ctx, pipeline)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	var rooms []*types.Room
-	if err := resp.All(ctx, &rooms); err != nil {
-		return nil, err
+	var aggResult []struct {
+		Data       []*types.Room
+		TotalCount int64
 	}
-	return rooms, nil
+	if err := cur.All(ctx, &aggResult); err != nil {
+		return nil, 0, err
+	}
+
+	if len(aggResult) == 0 {
+		return []*types.Room{}, 0, nil
+	}
+
+	return aggResult[0].Data, aggResult[0].TotalCount, nil
 }
 
 func (ms *MongoRoomStore) Drop(ctx context.Context) error {
