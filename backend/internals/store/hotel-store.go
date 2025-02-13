@@ -36,7 +36,9 @@ func NewMongoHotelStore(db *mongo.Database) *MongoHotelStore {
 
 func (ms *MongoHotelStore) GetHotels(ctx context.Context, qParams *types.GetHotelsRequest) ([]*types.Hotel, int64, error) {
 	pipeline := mongo.Pipeline{
-		bson.D{{Key: "$match", Value: bson.D{}}},
+		bson.D{{Key: "$match", Value: bson.D{
+			{Key: "rating", Value: bson.M{"$gte": qParams.Rating}},
+		}}},
 		bson.D{{Key: "$facet", Value: bson.D{
 			{Key: "data", Value: bson.A{
 				bson.D{{Key: "$skip", Value: &qParams.PaginationQuery.Page}},
