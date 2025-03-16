@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -67,15 +68,22 @@ func AddRoom(store store.Stores, roomType types.RoomType, hotelId primitive.Obje
 
 func AddBooking(store store.Stores, uid primitive.ObjectID, rid string, from, till time.Time) *types.Booking {
 	booking := &types.BookingParam{
-		UserID:   uid,
-		RoomID:   rid,
-		FromDate: from,
-		TillDate: till,
+		UserID:      uid,
+		RoomID:      rid,
+		FromDate:    from,
+		TillDate:    till,
+		CountPerson: rngInt(1, 8),
 	}
 	insertedBooking, err := store.Booking.InsertBooking(context.TODO(), booking)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return nil
 	}
 
 	return insertedBooking
+}
+
+func rngInt(min int, max int) int {
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return rng.Intn(max-min+1) + min
 }

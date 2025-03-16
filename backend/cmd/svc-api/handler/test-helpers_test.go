@@ -1,4 +1,4 @@
-package handler
+package handler_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/tnguven/hotel-reservation-app/internals/config"
+	"github.com/tnguven/hotel-reservation-app/cmd/svc-api/handler"
 	mid "github.com/tnguven/hotel-reservation-app/internals/middleware"
 	"github.com/tnguven/hotel-reservation-app/internals/repo"
 	"github.com/tnguven/hotel-reservation-app/internals/server"
@@ -63,7 +63,7 @@ func (tdb *TestDb) TearDown(t *testing.T) {
 }
 
 // mimic the real implementation to test the integration also
-func Setup(db *repo.MongoDatabase, withLog bool, configs *config.Configs) (*TestDb, *fiber.App) {
+func Setup(db *repo.MongoDatabase, configs *TestConfigs) (*TestDb, *fiber.App) {
 	hotelStore := store.NewMongoHotelStore(db)
 	roomStore := store.NewMongoRoomStore(db, hotelStore)
 	bookingStore := store.NewMongoBookingStore(db, roomStore)
@@ -78,10 +78,10 @@ func Setup(db *repo.MongoDatabase, withLog bool, configs *config.Configs) (*Test
 		db: db.GetDb(),
 	}
 
-	app := server.NewServer(withLog, "test")
+	app := server.NewServer(configs)
 
 	validator, _ := mid.NewValidator()
-	handlers := NewHandler(tdb.Store)
+	handlers := handler.NewHandler(tdb.Store)
 	handlers.Register(app, configs, validator)
 
 	return tdb, app

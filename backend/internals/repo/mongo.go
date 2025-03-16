@@ -2,10 +2,9 @@ package repo
 
 import (
 	"context"
-	"fmt"
 	"log"
 
-	"github.com/tnguven/hotel-reservation-app/internals/config"
+	"github.com/tnguven/hotel-reservation-app/internals/configure"
 	"github.com/tnguven/hotel-reservation-app/internals/must"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -19,21 +18,20 @@ type MongoDatabase struct {
 	db     *mongo.Database
 }
 
-func NewMongoDatabase(ctx context.Context, conf *config.Configs) *MongoDatabase {
+func NewMongoDatabase(ctx context.Context, conf configure.DbConfig) *MongoDatabase {
 	if mdClient == nil {
 		mdClient = must.Panic(mongo.Connect(
 			ctx,
-			options.Client().ApplyURI(fmt.Sprintf("%s/%s", conf.MongoDbURI, conf.MongoDbName)),
+			options.Client().ApplyURI(conf.DbUriWithDbName()),
 		))
 	}
 
 	db := &MongoDatabase{
 		client: mdClient,
-		db:     mdClient.Database(conf.MongoDbName),
+		db:     mdClient.Database(conf.DbName()),
 	}
 
 	db.CheckConnection(ctx)
-
 	return db
 }
 

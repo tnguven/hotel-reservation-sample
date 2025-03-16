@@ -7,7 +7,6 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/tnguven/hotel-reservation-app/cmd/svc-api/handler"
-	"github.com/tnguven/hotel-reservation-app/internals/config"
 	"github.com/tnguven/hotel-reservation-app/internals/middleware"
 	"github.com/tnguven/hotel-reservation-app/internals/must"
 	"github.com/tnguven/hotel-reservation-app/internals/repo"
@@ -32,9 +31,9 @@ func main() {
 
 	var (
 		rootCtx      = context.Background()
-		configs      = config.New().Validate()
+		configs      = NewConfig().Validate().Debug()
 		mongodb      = repo.NewMongoDatabase(rootCtx, configs)
-		route        = server.NewServer(configs.Log, configs.Env)
+		route        = server.NewServer(configs)
 		userStore    = store.NewMongoUserStore(mongodb)
 		hotelStore   = store.NewMongoHotelStore(mongodb)
 		roomStore    = store.NewMongoRoomStore(mongodb, hotelStore) // TODO refactor this shenanigan
@@ -52,7 +51,7 @@ func main() {
 	handlers.Register(route, configs, validator)
 
 	go func() {
-		if err := route.Listen(configs.ListenAddr); err != nil && err != http.ErrServerClosed {
+		if err := route.Listen(configs.ListenAddr()); err != nil && err != http.ErrServerClosed {
 			log.Panicf("⚠️ server listen error: %s", err)
 		}
 	}()

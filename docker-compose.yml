@@ -9,11 +9,25 @@ services:
     container_name: mongodb
     restart: unless-stopped
     ports:
-      - ${MONGO_PORT:-27017}:${MONGO_PORT:-27017}
+      - "${MONGO_PORT:-27017}:${MONGO_PORT:-27017}"
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     volumes:
       - ./scripts/mongo/init.js:/docker-entrypoint-initdb.d/init.js:ro
     environment:
-      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-hotel_io}
+      MONGO_INITDB_DATABASE: "${MONGO_DATABASE:-hotel_io}"
+
+  mongo-init:
+    image: mongo:8
+    container_name: mongo-init
+    depends_on:
+      - mongodb
+    restart: "no"
+    entrypoint:
+      [
+        "bash",
+        "-c",
+        "sleep 5 && mongosh --host mongodb:27017 --eval 'rs.initiate()'",
+      ]
 
   svc-api:
     build:
@@ -47,6 +61,12 @@ services:
         service: task-seeder
     container_name: task-seeder
     command: ["/app/task-seeder"]
+    develop:
+      watch:
+        - action: rebuild
+          path: ./cmd/task-seeder
+        - action: rebuild
+          path: ./db
     environment:
       <<: *common
       LISTEN_ADDR: ${LISTEN_ADDR:-5000}

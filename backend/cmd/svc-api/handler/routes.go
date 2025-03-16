@@ -2,11 +2,17 @@ package handler
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/tnguven/hotel-reservation-app/internals/config"
+	"github.com/tnguven/hotel-reservation-app/internals/configure"
 	mid "github.com/tnguven/hotel-reservation-app/internals/middleware"
 )
 
-func (h *Handler) Register(app *fiber.App, configs *config.Configs, validator *mid.Validator) {
+type RouteConfigs interface {
+	configure.Secrets
+	configure.Session
+	configure.Common
+}
+
+func (h *Handler) Register(app *fiber.App, configs RouteConfigs, validator *mid.Validator) {
 	v1 := app.Group("/v1")
 
 	withAutMid := mid.JWTAuthentication(h.userStore, configs)
@@ -33,7 +39,7 @@ func (h *Handler) Register(app *fiber.App, configs *config.Configs, validator *m
 	roomsPrivate := v1.Group("/rooms", withAutMid)
 	roomsPrivate.Get("/", mid.WithValidation(validator, GetRoomsSchema), h.HandleGetRooms)
 	bookPrivate := roomsPrivate.Group("/:roomID") // TODO: add roomID validation
-	bookPrivate.Post("/book", mid.WithValidation(validator, BookingRoomRequestSchema), h.HandleBookRoom)
+	bookPrivate.Post("/booking", mid.WithValidation(validator, BookingRoomRequestSchema), h.HandleBookRoom)
 	// TODO cancel a booking
 
 	adminBookings := v1.Group("/admin/bookings", withAutMid)

@@ -1,9 +1,6 @@
 package handler
 
 import (
-	"context"
-	"fmt"
-
 	"github.com/tnguven/hotel-reservation-app/internals/types"
 	"github.com/tnguven/hotel-reservation-app/internals/utils"
 
@@ -24,19 +21,9 @@ func (h *Handler) HandleBookRoom(c *fiber.Ctx) error {
 	params.RoomID = roomID
 	params.UserID = user.ID
 
-	roomIsAvailable, err := h.isBookAvailableForBooking(c.Context(), &params)
-	if err != nil {
-		return types.NewError(err, fiber.StatusInternalServerError, "Error checking if book is available")
-	}
-	if !roomIsAvailable {
-		return c.Status(fiber.StatusConflict).JSON(&types.GenericResponse{
-			Msg:    fmt.Sprintf("room %s already booked", roomID),
-			Status: fiber.StatusConflict,
-		})
-	}
-
 	insertedBooking, err := h.bookingStore.InsertBooking(c.Context(), &params)
 	if err != nil {
+
 		return types.NewError(err, fiber.StatusInternalServerError, "Error inserting booking")
 	}
 
@@ -44,15 +31,6 @@ func (h *Handler) HandleBookRoom(c *fiber.Ctx) error {
 		Data:   insertedBooking,
 		Status: fiber.StatusCreated,
 	})
-}
-
-func (h *Handler) isBookAvailableForBooking(ctx context.Context, params *types.BookingParam) (bool, error) {
-	bookings, err := h.bookingStore.GetBookingsByRoomID(ctx, params)
-	if err != nil {
-		return false, err
-	}
-
-	return len(bookings) == 0, nil
 }
 
 func (h *Handler) HandleGetRooms(c *fiber.Ctx) error {

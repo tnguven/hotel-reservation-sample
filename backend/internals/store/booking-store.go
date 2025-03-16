@@ -2,14 +2,18 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/tnguven/hotel-reservation-app/internals/repo"
 	"github.com/tnguven/hotel-reservation-app/internals/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 )
 
 const bookingCollection = "bookings"
@@ -45,15 +49,55 @@ func NewMongoBookingStore(mongodb *repo.MongoDatabase, roomStore RoomStore) *Mon
 func (ms *MongoBookingStore) InsertBooking(ctx context.Context, params *types.BookingParam) (*types.Booking, error) {
 	booking, err := types.NewBookingFromParams(params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("NewBookingFromParams failed %w", err)
 	}
 
-	resp, err := ms.coll.InsertOne(ctx, booking)
+	// Start a session
+	session, err := ms.db.Client().StartSession()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error starting transaction %w", err)
+	}
+	defer session.EndSession(ctx)
+
+	var ErrRoomNotAvailable = errors.New("room is not available")
+
+	// Define transaction function
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		roomIsAvailable, err := ms.GetBookingsByRoomID(ctx, params)
+		if err != nil {
+			return nil, err
+		}
+		if len(roomIsAvailable) > 0 {
+			return nil, ErrRoomNotAvailable
+		}
+
+		insertedBooking, err := ms.coll.InsertOne(sessCtx, booking)
+		if err != nil {
+			return nil, err
+		}
+
+		return insertedBooking, nil
 	}
 
-	booking.ID = resp.InsertedID.(primitive.ObjectID)
+	wc := writeconcern.Majority()
+	txnOptions := options.Transaction().SetWriteConcern(wc)
+
+	// Run transaction
+	// WithTransaction will rollback if mongo returns an error
+	result, err := session.WithTransaction(
+		ctx,
+		callback,
+		txnOptions,
+	)
+	if err != nil {
+		log.Println("Transaction error:", err)
+		if errors.Is(err, ErrRoomNotAvailable) {
+			return nil, types.NewError(err, http.StatusConflict, "room is not abailable")
+		}
+		return nil, types.NewError(err, http.StatusInternalServerError, "error processing booking transaction")
+	}
+
+	booking.ID = result.(*mongo.InsertOneResult).InsertedID.(primitive.ObjectID)
 	return booking, nil
 }
 

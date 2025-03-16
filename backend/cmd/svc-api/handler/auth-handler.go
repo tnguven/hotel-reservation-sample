@@ -5,21 +5,24 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/tnguven/hotel-reservation-app/internals/config"
+	"github.com/tnguven/hotel-reservation-app/internals/tokener"
 	"github.com/tnguven/hotel-reservation-app/internals/types"
 	"github.com/tnguven/hotel-reservation-app/internals/utils"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type AuthResponse struct {
-	User  *types.User `json:"user"`
-	Token string      `json:"token"`
-}
-type signInRequest struct {
-	*types.CreateUserParams
-}
+type (
+	AuthResponse struct {
+		User  *types.User `json:"user"`
+		Token string      `json:"token"`
+	}
 
-func (h *Handler) HandleAuthenticate(configs *config.Configs) fiber.Handler {
+	signInRequest struct {
+		*types.CreateUserParams
+	}
+)
+
+func (h *Handler) HandleAuthenticate(configs tokener.JWTConfigs) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		authReqParams, ok := c.Locals(authRequestKey).(*authRequest)
 		if !ok {
@@ -43,7 +46,7 @@ func (h *Handler) HandleAuthenticate(configs *config.Configs) fiber.Handler {
 			return utils.InvalidCredError()
 		}
 
-		token, err := utils.GenerateJWT(user.ID.Hex(), user.IsAdmin, configs)
+		token, err := tokener.GenerateJWT(user.ID.Hex(), user.IsAdmin, configs)
 		if err != nil {
 			return types.NewError(err, fiber.StatusInternalServerError, "")
 		}

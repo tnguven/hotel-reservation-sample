@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/tnguven/hotel-reservation-app/internals/config"
+	"github.com/tnguven/hotel-reservation-app/internals/configure"
 	"github.com/tnguven/hotel-reservation-app/internals/repo"
 )
 
-func NewDb(config *config.Configs) *repo.MongoDatabase {
+func NewDb(config configure.DbConfig) *repo.MongoDatabase {
 	ctx := context.Background()
 	return repo.NewMongoDatabase(ctx, config)
 }

@@ -17,7 +17,8 @@ import (
 )
 
 func TestHandleAuthenticate(t *testing.T) {
-	tdb, app := handler.Setup(mDatabase, false, configs)
+	config := NewConfig()
+	tdb, app := Setup(mDatabase, config)
 	const target = "/v1/auth"
 
 	t.Run("Validations", func(t *testing.T) {
@@ -209,7 +210,8 @@ func TestHandleAuthenticate(t *testing.T) {
 }
 
 func TestHandleSignin(t *testing.T) {
-	tdb, app := handler.Setup(mDatabase, false, configs)
+	config := NewConfig()
+	tdb, app := Setup(mDatabase, config)
 	const target = "/v1/auth/signin"
 	invalidMaxCharName := strings.Repeat("a", 49)
 

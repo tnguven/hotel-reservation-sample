@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tnguven/hotel-reservation-app/cmd/svc-api/handler"
 	"github.com/tnguven/hotel-reservation-app/db/fixtures"
 	"github.com/tnguven/hotel-reservation-app/internals/types"
 	"github.com/tnguven/hotel-reservation-app/internals/utils"
@@ -16,7 +15,8 @@ import (
 )
 
 func TestPostUser(t *testing.T) {
-	tdb, app := handler.Setup(mDatabase, false, configs)
+	config := NewConfig()
+	tdb, app := Setup(mDatabase, config)
 	invalidMaxCharName := strings.Repeat("a", 49)
 	const target = "/v1/users"
 
@@ -262,7 +262,8 @@ func TestPostUser(t *testing.T) {
 }
 
 func TestHandleGetUser(t *testing.T) {
-	tdb, app := handler.Setup(mDatabase, false, configs)
+	config := NewConfig()
+	tdb, app := Setup(mDatabase, config)
 	var (
 		firstName = "get"
 		lastName  = "userbyid"
@@ -313,7 +314,8 @@ func TestHandleGetUser(t *testing.T) {
 }
 
 func TestHandlePutUser(t *testing.T) {
-	tdb, app := handler.Setup(mDatabase, false, configs)
+	config := NewConfig()
+	tdb, app := Setup(mDatabase, config)
 	invalidMaxCharName := strings.Repeat("a", 49)
 	const target = "/v1/users"
 

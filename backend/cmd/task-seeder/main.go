@@ -12,7 +12,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/tnguven/hotel-reservation-app/db"
 	"github.com/tnguven/hotel-reservation-app/db/fixtures"
-	"github.com/tnguven/hotel-reservation-app/internals/config"
 	"github.com/tnguven/hotel-reservation-app/internals/repo"
 	"github.com/tnguven/hotel-reservation-app/internals/store"
 	"github.com/tnguven/hotel-reservation-app/internals/types"
@@ -25,13 +24,18 @@ func main() {
 
 	var (
 		ctx          = context.Background()
-		configs      = config.New().Validate().Debug()
+		configs      = NewConfig().Validate().Debug()
 		mongodb      = repo.NewMongoDatabase(ctx, configs)
 		userStore    = store.NewMongoUserStore(mongodb)
 		hotelStore   = store.NewMongoHotelStore(mongodb)
 		roomStore    = store.NewMongoRoomStore(mongodb, hotelStore)
 		bookingStore = store.NewMongoBookingStore(mongodb, roomStore)
 	)
+
+	defer func() {
+		mongodb.CloseConnection(ctx)
+		fmt.Println("Shutting down...")
+	}()
 
 	dbStore := store.Stores{
 		User:    userStore,
@@ -45,7 +49,6 @@ func main() {
 	roomStore.Drop(ctx)
 	bookingStore.Drop(ctx)
 
-	defer mongodb.CloseConnection(ctx)
 	admin := fixtures.AddUser(dbStore, "Test", "test", true)
 	fmt.Println("admin => ", admin.ID)
 	user := fixtures.AddUser(dbStore, "Test1", "Test2", false)
@@ -87,6 +90,7 @@ func main() {
 	}
 
 	wg := sync.WaitGroup{}
+	bookedIds := []string{}
 
 	for _, h := range hotels {
 		hotel := fixtures.AddHotel(dbStore, h[0], h[1], rngInt(1, 10), nil)
@@ -123,16 +127,19 @@ func main() {
 						dbStore,
 						user.ID,
 						insertedRoom.ID.Hex(),
-						time.Now(),
-						time.Now().AddDate(0, 0, rngInt(1, 10)),
+						time.Now().AddDate(0, 0, rngInt(0, 10)),
+						time.Now().AddDate(0, 0, rngInt(11, 22)),
 					)
-					fmt.Println("booking =>", booked.ID)
+					if booked != nil {
+						bookedIds = append(bookedIds, fmt.Sprintf("%s\n", booked.ID.Hex()))
+					}
 				}
 			}()
 		}
 	}
 
 	wg.Wait()
+	fmt.Println(bookedIds)
 	db.CreateIndexes(ctx, mongodb.GetDb())
 }
 

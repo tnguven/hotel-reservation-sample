@@ -5,19 +5,19 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/tnguven/hotel-reservation-app/internals/config"
+	"github.com/tnguven/hotel-reservation-app/internals/configure"
 	"github.com/tnguven/hotel-reservation-app/internals/store"
 	"github.com/tnguven/hotel-reservation-app/internals/utils"
 )
 
-func JWTAuthentication(userStore store.UserStore, configs *config.Configs) fiber.Handler {
+func JWTAuthentication(userStore store.UserStore, configs configure.Secrets) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		token, ok := c.GetReqHeaders()["X-Api-Token"]
 		if !ok {
 			return utils.UnauthorizedError()
 		}
 
-		claims, err := validateToken(token[0], configs.JWTSecret)
+		claims, err := validateToken(token[0], configs.JWTSecret())
 		if err != nil {
 			return utils.BadRequestError("missing api token")
 		}
