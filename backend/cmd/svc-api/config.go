@@ -8,8 +8,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/tnguven/hotel-reservation-app/internals/configure"
-	"github.com/tnguven/hotel-reservation-app/internals/must"
+	"github.com/tnguven/hotel-reservation-app/internal/configure"
+	"github.com/tnguven/hotel-reservation-app/internal/must"
 )
 
 type Configs struct {

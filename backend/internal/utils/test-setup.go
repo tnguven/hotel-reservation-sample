@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/tnguven/hotel-reservation-app/internals/configure"
-	"github.com/tnguven/hotel-reservation-app/internals/repo"
+	"github.com/tnguven/hotel-reservation-app/internal/configure"
+	"github.com/tnguven/hotel-reservation-app/internal/repo"
 )
 
 func NewDb(config configure.DbConfig) *repo.MongoDatabase {

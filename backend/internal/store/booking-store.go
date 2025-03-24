@@ -7,8 +7,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/tnguven/hotel-reservation-app/internals/repo"
-	"github.com/tnguven/hotel-reservation-app/internals/types"
+	"github.com/tnguven/hotel-reservation-app/internal/repo"
+	"github.com/tnguven/hotel-reservation-app/internal/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -139,6 +139,7 @@ func (ms *MongoBookingStore) GetBookingsByID(ctx context.Context, id string) (*t
 }
 
 func (ms *MongoBookingStore) GetBookingsAsAdmin(ctx context.Context) ([]*types.Booking, error) {
+	// TODO add pagination
 	cur, err := ms.coll.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err

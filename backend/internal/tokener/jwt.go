@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/tnguven/hotel-reservation-app/internals/configure"
+	"github.com/tnguven/hotel-reservation-app/internal/configure"
 )
 
 type JWTConfigs interface {

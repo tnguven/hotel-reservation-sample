@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/tnguven/hotel-reservation-app/db/fixtures"
-	"github.com/tnguven/hotel-reservation-app/internals/types"
-	"github.com/tnguven/hotel-reservation-app/internals/utils"
+	"github.com/tnguven/hotel-reservation-app/internal/types"
+	"github.com/tnguven/hotel-reservation-app/internal/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -67,7 +67,7 @@ func TestPostUser(t *testing.T) {
 				input:  partialInput,
 				status: 400,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -84,7 +84,7 @@ func TestPostUser(t *testing.T) {
 				input:  invalidEmail,
 				status: 400,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -98,7 +98,7 @@ func TestPostUser(t *testing.T) {
 				input:  invalidMinNames,
 				status: 400,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -113,7 +113,7 @@ func TestPostUser(t *testing.T) {
 				input:  invalidMaxNames,
 				status: 400,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -128,7 +128,7 @@ func TestPostUser(t *testing.T) {
 				input:  invalidAlphaNames,
 				status: 400,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -143,7 +143,7 @@ func TestPostUser(t *testing.T) {
 				input:  invalidPassword,
 				status: 400,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -205,7 +205,7 @@ func TestPostUser(t *testing.T) {
 			t.Error(err)
 		}
 
-		var result types.GenericResponse
+		var result types.ResGeneric
 		if errDecode := json.NewDecoder(resp.Body).Decode(&result); errDecode != nil {
 			t.Fatal(errDecode)
 		}
@@ -281,7 +281,7 @@ func TestHandleGetUser(t *testing.T) {
 			t.Error(err)
 		}
 
-		var result types.GenericResponse
+		var result types.ResGeneric
 		if errDecode := json.NewDecoder(resp.Body).Decode(&result); errDecode != nil {
 			t.Fatal(errDecode)
 		}
@@ -353,7 +353,7 @@ func TestHandlePutUser(t *testing.T) {
 				input:  invalidMinFields,
 				status: 400,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -369,7 +369,7 @@ func TestHandlePutUser(t *testing.T) {
 				input:  invalidMaxFields,
 				status: 400,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -385,7 +385,7 @@ func TestHandlePutUser(t *testing.T) {
 				input:  invalidAlphaFields,
 				status: 400,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -401,7 +401,7 @@ func TestHandlePutUser(t *testing.T) {
 				desc:   "must return required and invalid fields",
 				status: 400,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -462,7 +462,7 @@ func TestHandlePutUser(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		var result types.GenericResponse
+		var result types.ResGeneric
 		if errDecode := json.NewDecoder(resp.Body).Decode(&result); errDecode != nil {
 			t.Fatal(errDecode)
 		}
@@ -489,7 +489,7 @@ func TestHandlePutUser(t *testing.T) {
 			t.Error(err)
 		}
 
-		var response types.GenericResponse
+		var response types.ResGeneric
 		if errDecode := json.NewDecoder(resp.Body).Decode(&response); errDecode != nil {
 			t.Fatal(errDecode)
 		}

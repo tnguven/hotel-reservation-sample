@@ -2,16 +2,31 @@ package fixtures
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
 	"strings"
 	"time"
 
-	"github.com/tnguven/hotel-reservation-app/internals/store"
-	"github.com/tnguven/hotel-reservation-app/internals/types"
+	"github.com/tnguven/hotel-reservation-app/internal/store"
+	"github.com/tnguven/hotel-reservation-app/internal/types"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
+
+// helper to avoid duplication errors
+func isDup(err error) bool {
+	var e mongo.WriteException
+	if errors.As(err, &e) {
+		for _, we := range e.WriteErrors {
+			if we.Code == 11000 {
+				return true
+			}
+		}
+	}
+	return false
+}
 
 func AddUser(store store.Stores, fname, lname string, isAdmin bool) *types.User {
 	user, err := types.NewUserFromParams(&types.CreateUserParams{
@@ -25,7 +40,7 @@ func AddUser(store store.Stores, fname, lname string, isAdmin bool) *types.User 
 	}
 	user.IsAdmin = isAdmin
 	insertedUser, err := store.User.InsertUser(context.TODO(), user)
-	if err != nil {
+	if err != nil && !isDup(err) {
 		log.Fatal(err)
 	}
 
@@ -44,7 +59,7 @@ func AddHotel(store store.Stores, name, loc string, rating int, rooms []primitiv
 		Rating:   rating,
 	}
 	insertedHotel, err := store.Hotel.InsertHotel(context.TODO(), hotel)
-	if err != nil {
+	if err != nil && !isDup(err) {
 		log.Fatal(err)
 	}
 
@@ -59,14 +74,19 @@ func AddRoom(store store.Stores, roomType types.RoomType, hotelId primitive.Obje
 	}
 
 	insertedRoom, err := store.Room.InsertRoom(context.TODO(), room)
-	if err != nil {
+	if err != nil && !isDup(err) {
 		log.Fatal(err)
 	}
 
 	return insertedRoom
 }
 
-func AddBooking(store store.Stores, uid primitive.ObjectID, rid string, from, till time.Time) *types.Booking {
+func AddBooking(
+	store store.Stores,
+	uid primitive.ObjectID,
+	rid string,
+	from, till time.Time,
+) *types.Booking {
 	booking := &types.BookingParam{
 		UserID:      uid,
 		RoomID:      rid,
@@ -75,7 +95,7 @@ func AddBooking(store store.Stores, uid primitive.ObjectID, rid string, from, ti
 		CountPerson: rngInt(1, 8),
 	}
 	insertedBooking, err := store.Booking.InsertBooking(context.TODO(), booking)
-	if err != nil {
+	if err != nil && !isDup(err) {
 		log.Println(err)
 		return nil
 	}

@@ -2,8 +2,8 @@ package handler
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/tnguven/hotel-reservation-app/internals/types"
-	"github.com/tnguven/hotel-reservation-app/internals/utils"
+	"github.com/tnguven/hotel-reservation-app/internal/types"
+	"github.com/tnguven/hotel-reservation-app/internal/utils"
 )
 
 const (
@@ -60,5 +60,5 @@ func GetUsersRequestSchema(c *fiber.Ctx) (interface{}, string, error) {
 	limit := c.QueryInt("limit", 10)
 	page := c.QueryInt("page", 1)
 
-	return types.NewPaginationQuery(limit, page), getUsersRequestKey, nil
+	return types.NewQueryNumericPaginate(limit, page), getUsersRequestKey, nil
 }

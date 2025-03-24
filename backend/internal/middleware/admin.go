@@ -2,8 +2,8 @@ package middleware
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/tnguven/hotel-reservation-app/internals/types"
-	"github.com/tnguven/hotel-reservation-app/internals/utils"
+	"github.com/tnguven/hotel-reservation-app/internal/types"
+	"github.com/tnguven/hotel-reservation-app/internal/utils"
 )
 
 func WithAdminAuth(c *fiber.Ctx) error {

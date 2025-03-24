@@ -1,6 +1,6 @@
 package handler
 
-import "github.com/tnguven/hotel-reservation-app/internals/store"
+import "github.com/tnguven/hotel-reservation-app/internal/store"
 
 type Handler struct {
 	userStore    store.UserStore

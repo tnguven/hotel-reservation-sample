@@ -8,13 +8,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mongodb"
 	"github.com/tnguven/hotel-reservation-app/db"
-	"github.com/tnguven/hotel-reservation-app/internals/configure"
-	"github.com/tnguven/hotel-reservation-app/internals/must"
-	"github.com/tnguven/hotel-reservation-app/internals/repo"
-	"github.com/tnguven/hotel-reservation-app/internals/utils"
+	"github.com/tnguven/hotel-reservation-app/internal/configure"
+	"github.com/tnguven/hotel-reservation-app/internal/must"
+	"github.com/tnguven/hotel-reservation-app/internal/repo"
+	"github.com/tnguven/hotel-reservation-app/internal/utils"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -89,13 +88,16 @@ var (
 func TestMain(m *testing.M) {
 	var exitCode int
 	ctx := context.Background()
-	mongoDBContainer := must.Panic(mongodb.Run(ctx, "mongo:8"))
+	mongoDBContainer := must.Panic(
+		mongodb.Run(ctx, "mongo:8", mongodb.WithReplicaSet("rs_test")), // necessary for transactions
+	)
 	defer func() {
-		if err := testcontainers.TerminateContainer(mongoDBContainer); err != nil {
+		if err := mongoDBContainer.Terminate(ctx); err != nil {
 			fmt.Printf("failed to terminate container: %s", err)
 		}
 		os.Exit(exitCode)
 	}()
+
 	endpoint := must.Panic(mongoDBContainer.ConnectionString(ctx))
 	testConfig := NewConfig().WithMongoDbURI(endpoint)
 	mDatabase = utils.NewDb(testConfig)

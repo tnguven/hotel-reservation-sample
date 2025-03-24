@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/tnguven/hotel-reservation-app/internals/repo"
-	"github.com/tnguven/hotel-reservation-app/internals/types"
+	"github.com/tnguven/hotel-reservation-app/internal/repo"
+	"github.com/tnguven/hotel-reservation-app/internal/types"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -42,8 +42,8 @@ func (ms *MongoHotelStore) GetHotels(ctx context.Context, qParams *types.GetHote
 		}}},
 		bson.D{{Key: "$facet", Value: bson.D{
 			{Key: "data", Value: bson.A{
-				bson.D{{Key: "$skip", Value: &qParams.PaginationQuery.Page}},
-				bson.D{{Key: "$limit", Value: &qParams.PaginationQuery.Limit}},
+				bson.D{{Key: "$skip", Value: &qParams.Page}},
+				bson.D{{Key: "$limit", Value: &qParams.Limit}},
 			}},
 			{Key: "totalCount", Value: bson.A{
 				bson.D{{Key: "$count", Value: "count"}},
@@ -102,7 +102,11 @@ func (ms *MongoHotelStore) InsertHotel(ctx context.Context, hotel *types.Hotel) 
 	return hotel, nil
 }
 
-func (ms *MongoHotelStore) PutHotel(ctx context.Context, params *types.UpdateHotelParams, hotelId *primitive.ObjectID) error {
+func (ms *MongoHotelStore) PutHotel(
+	ctx context.Context,
+	params *types.UpdateHotelParams,
+	hotelId *primitive.ObjectID,
+) error {
 	result, err := ms.coll.UpdateOne(ctx, bson.M{"_id": hotelId}, params.ToBsonMap())
 	if err != nil {
 		return err

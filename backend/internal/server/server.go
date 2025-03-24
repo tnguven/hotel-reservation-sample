@@ -5,8 +5,8 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/etag"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/tnguven/hotel-reservation-app/internals/configure"
-	"github.com/tnguven/hotel-reservation-app/internals/types"
+	"github.com/tnguven/hotel-reservation-app/internal/configure"
+	"github.com/tnguven/hotel-reservation-app/internal/types"
 )
 
 type ErrorResponse struct {

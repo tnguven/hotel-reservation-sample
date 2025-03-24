@@ -12,9 +12,9 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/tnguven/hotel-reservation-app/db"
 	"github.com/tnguven/hotel-reservation-app/db/fixtures"
-	"github.com/tnguven/hotel-reservation-app/internals/repo"
-	"github.com/tnguven/hotel-reservation-app/internals/store"
-	"github.com/tnguven/hotel-reservation-app/internals/types"
+	"github.com/tnguven/hotel-reservation-app/internal/repo"
+	"github.com/tnguven/hotel-reservation-app/internal/store"
+	"github.com/tnguven/hotel-reservation-app/internal/types"
 )
 
 func main() {

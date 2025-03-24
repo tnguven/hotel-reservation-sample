@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/gofiber/fiber/v2/log"
-	"github.com/tnguven/hotel-reservation-app/internals/types"
-	"github.com/tnguven/hotel-reservation-app/internals/utils"
+	"github.com/tnguven/hotel-reservation-app/internal/types"
+	"github.com/tnguven/hotel-reservation-app/internal/utils"
 
 	"github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -24,14 +24,14 @@ func (h *Handler) HandleGetUser(c *fiber.Ctx) error {
 		return types.NewError(err, fiber.StatusInternalServerError, "Error getting user")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
+	return c.Status(fiber.StatusOK).JSON(types.ResGeneric{
 		Data:   user,
 		Status: fiber.StatusOK,
 	})
 }
 
 func (h *Handler) HandleGetUsers(c *fiber.Ctx) error {
-	query, ok := c.Locals(getUsersRequestKey).(*types.PaginationQuery)
+	query, ok := c.Locals(getUsersRequestKey).(*types.QueryNumericPaginate)
 	if !ok {
 		log.Error("getUsers missing locals")
 		return utils.BadRequestError("")
@@ -46,13 +46,15 @@ func (h *Handler) HandleGetUsers(c *fiber.Ctx) error {
 		return types.NewError(err, fiber.StatusInternalServerError, "error getting users")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
-		Status: fiber.StatusOK,
-		Data:   users,
-		PaginationResponse: &types.PaginationResponse{
+	return c.Status(fiber.StatusOK).JSON(types.ResWithPaginate[types.ResNumericPaginate]{
+		ResGeneric: types.ResGeneric{
+			Status: fiber.StatusOK,
+			Data:   users,
+		},
+		Pagination: types.ResNumericPaginate{
 			Count: total,
 			Page:  query.Page,
-			Limit: query.Limit,
+			Limit: int(query.Limit),
 		},
 	})
 }
@@ -71,7 +73,7 @@ func (h *Handler) HandlePostUser(c *fiber.Ctx) error {
 	insertedUser, err := h.userStore.InsertUser(c.Context(), user)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
-			return c.Status(fiber.StatusConflict).JSON(&types.GenericResponse{
+			return c.Status(fiber.StatusConflict).JSON(types.ResGeneric{
 				Msg:    "email already exist",
 				Status: fiber.StatusConflict,
 			})
@@ -80,7 +82,7 @@ func (h *Handler) HandlePostUser(c *fiber.Ctx) error {
 		return types.NewError(err, fiber.StatusInternalServerError, "something went wrong")
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(&types.GenericResponse{
+	return c.Status(fiber.StatusCreated).JSON(types.ResGeneric{
 		Data:   insertedUser,
 		Status: fiber.StatusCreated,
 	})
@@ -94,7 +96,7 @@ func (h *Handler) HandleDeleteUser(c *fiber.Ctx) error {
 		return types.NewError(err, fiber.StatusInternalServerError, "error deleting user")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
+	return c.Status(fiber.StatusOK).JSON(types.ResGeneric{
 		Msg:    fmt.Sprintf("User %s deleted", id),
 		Status: fiber.StatusOK,
 	})
@@ -116,15 +118,15 @@ func (h *Handler) HandlePutUser(c *fiber.Ctx) error {
 	}
 
 	if matchCount == 0 {
-		return &types.Error{
-			GenericResponse: &types.GenericResponse{
+		return types.Error{
+			ResGeneric: &types.ResGeneric{
 				Status: http.StatusNotFound,
 				Msg:    fmt.Sprintf("no user found with id %s", id),
 			},
 		}
 	}
 
-	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
+	return c.Status(fiber.StatusOK).JSON(types.ResGeneric{
 		Msg:    fmt.Sprintf("User %s updated", id),
 		Status: fiber.StatusOK,
 	})

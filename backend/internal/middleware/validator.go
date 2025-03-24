@@ -1,11 +1,9 @@
 package middleware
 
 import (
-	"fmt"
-
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
-	"github.com/tnguven/hotel-reservation-app/internals/utils"
+	"github.com/tnguven/hotel-reservation-app/internal/utils"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -41,13 +39,12 @@ func WithValidation(v *Validator, getSchema SchemaFunc) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		schema, name, err := getSchema(c)
 		if err != nil {
-			fmt.Println("ERROR HERE", err.Error())
-			return err
+			return utils.BadRequestError("Error getting schema")
 		}
+
 		if err := v.Validate(schema); err != nil {
 			return utils.ValidatorError(err)
 		}
-
 		if name != "" {
 			c.Locals(name, schema)
 		}

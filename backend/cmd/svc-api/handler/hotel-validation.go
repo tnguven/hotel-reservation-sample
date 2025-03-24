@@ -2,7 +2,7 @@ package handler
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/tnguven/hotel-reservation-app/internals/types"
+	"github.com/tnguven/hotel-reservation-app/internal/types"
 )
 
 const (
@@ -22,8 +22,8 @@ func GetHotelRequestSchema(c *fiber.Ctx) (interface{}, string, error) {
 
 func GetHotelsQueryRequestSchema(c *fiber.Ctx) (interface{}, string, error) {
 	return &types.GetHotelsRequest{
-		Rating:          c.QueryInt("rating", 0),
-		Rooms:           c.QueryBool("rooms", false),
-		PaginationQuery: types.NewPaginationQuery(c.QueryInt("limit", 10), c.QueryInt("page", 1)),
+		Rating:               c.QueryInt("rating", 0),
+		Rooms:                c.QueryBool("rooms", false),
+		QueryNumericPaginate: types.NewQueryNumericPaginate(c.QueryInt("limit", 10), c.QueryInt("page", 1)),
 	}, getHotelsRequestKey, nil
 }

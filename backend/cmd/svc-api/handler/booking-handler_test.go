@@ -8,9 +8,9 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/tnguven/hotel-reservation-app/db/fixtures"
-	"github.com/tnguven/hotel-reservation-app/internals/tokener"
-	"github.com/tnguven/hotel-reservation-app/internals/types"
-	"github.com/tnguven/hotel-reservation-app/internals/utils"
+	"github.com/tnguven/hotel-reservation-app/internal/tokener"
+	"github.com/tnguven/hotel-reservation-app/internal/types"
+	"github.com/tnguven/hotel-reservation-app/internal/utils"
 )
 
 func TestHandleGetBookings(t *testing.T) {
@@ -60,7 +60,7 @@ func TestHandleGetBookings(t *testing.T) {
 			t.Fatalf("expected 200 status code but received %d", resp.StatusCode)
 		}
 
-		var response *types.GenericResponse
+		var response *types.ResGeneric
 		if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			t.Fatal(err)
 		}
@@ -95,7 +95,7 @@ func TestHandleGetBookings(t *testing.T) {
 			t.Fatalf("expected 200 status code but received %d", resp.StatusCode)
 		}
 
-		var response *types.GenericResponse
+		var response *types.ResGeneric
 		if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			t.Fatal(err)
 		}

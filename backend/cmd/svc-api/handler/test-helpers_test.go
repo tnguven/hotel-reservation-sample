@@ -7,12 +7,12 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/tnguven/hotel-reservation-app/cmd/svc-api/handler"
-	mid "github.com/tnguven/hotel-reservation-app/internals/middleware"
-	"github.com/tnguven/hotel-reservation-app/internals/repo"
-	"github.com/tnguven/hotel-reservation-app/internals/server"
-	"github.com/tnguven/hotel-reservation-app/internals/store"
-	"github.com/tnguven/hotel-reservation-app/internals/types"
-	"github.com/tnguven/hotel-reservation-app/internals/utils"
+	mid "github.com/tnguven/hotel-reservation-app/internal/middleware"
+	"github.com/tnguven/hotel-reservation-app/internal/repo"
+	"github.com/tnguven/hotel-reservation-app/internal/server"
+	"github.com/tnguven/hotel-reservation-app/internal/store"
+	"github.com/tnguven/hotel-reservation-app/internal/types"
+	"github.com/tnguven/hotel-reservation-app/internal/utils"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 

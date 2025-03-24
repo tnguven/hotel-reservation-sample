@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/tnguven/hotel-reservation-app/internals/configure"
-	"github.com/tnguven/hotel-reservation-app/internals/must"
+	"github.com/tnguven/hotel-reservation-app/internal/configure"
+	"github.com/tnguven/hotel-reservation-app/internal/must"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"

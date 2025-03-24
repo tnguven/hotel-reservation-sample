@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/tnguven/hotel-reservation-app/internals/configure"
+	"github.com/tnguven/hotel-reservation-app/internal/configure"
 )
 
 type Configs struct {
