@@ -41,7 +41,6 @@ func (h *Handler) Register(app *fiber.App, configs RouteConfigs, validator *mid.
 	bookPrivate := roomsPrivate.Group("/:roomID") // TODO: add roomID validation
 	bookPrivate.Post("/booking", mid.WithValidation(validator, BookingRoomRequestSchema), h.HandleBookRoom)
 	// TODO cancel a booking
-
 	adminBookings := v1.Group("/admin/bookings", withAutMid)
 	adminBookings.Get("/", mid.WithAdminAuth, h.HandleGetBookingsAsAdmin)
 

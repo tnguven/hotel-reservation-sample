@@ -47,7 +47,6 @@ func WithValidation(v *Validator, getSchema SchemaFunc) fiber.Handler {
 		if err := v.Validate(schema); err != nil {
 			return utils.ValidatorError(err)
 		}
-
 		if name != "" {
 			c.Locals(name, schema)
 		}

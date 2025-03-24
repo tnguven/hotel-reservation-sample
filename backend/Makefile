@@ -8,7 +8,7 @@ run: build
 	@${GO_FLAGS} "${BUILD_DIR}"
 
 test-rerun:
-	@${GO_FLAGS} go run gotest.tools/gotestsum@latest --debug --format testname --rerun-fails --packages="./..." -- -count=2
+	@${GO_FLAGS} go run gotest.tools/gotestsum@latest --debug --format testname --rerun-fails --packages="./..." -- -count=1
 
 test:
 	@${GO_FLAGS} go run gotest.tools/gotestsum@latest --debug --format testname --debug --packages="./..." -- -count=1

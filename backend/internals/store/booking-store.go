@@ -139,6 +139,7 @@ func (ms *MongoBookingStore) GetBookingsByID(ctx context.Context, id string) (*t
 }
 
 func (ms *MongoBookingStore) GetBookingsAsAdmin(ctx context.Context) ([]*types.Booking, error) {
+	// TODO add pagination
 	cur, err := ms.coll.Find(ctx, bson.M{})
 	if err != nil {
 		return nil, err

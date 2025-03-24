@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/tnguven/hotel-reservation-app/internals/types"
@@ -18,7 +17,6 @@ func (h *Handler) HandleGetHotels(c *fiber.Ctx) error {
 		log.Errorf("locals %s field missing", getHotelRequestKey)
 		return utils.BadRequestError("")
 	}
-	fmt.Printf("qPARAMS: %+v", qParams)
 
 	hotels, total, err := h.hotelStore.GetHotels(c.Context(), qParams)
 	if err != nil {
@@ -28,13 +26,15 @@ func (h *Handler) HandleGetHotels(c *fiber.Ctx) error {
 		return types.NewError(err, fiber.StatusInternalServerError, "Error getting hotels")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
-		Data:   &hotels,
-		Status: fiber.StatusOK,
-		PaginationResponse: &types.PaginationResponse{
+	return c.Status(fiber.StatusOK).JSON(types.ResWithPaginate[types.ResNumericPaginate]{
+		ResGeneric: types.ResGeneric{
+			Data:   &hotels,
+			Status: fiber.StatusOK,
+		},
+		Pagination: types.ResNumericPaginate{
 			Count: total,
 			Page:  qParams.Page,
-			Limit: qParams.Limit,
+			Limit: int(qParams.Limit),
 		},
 	})
 }
