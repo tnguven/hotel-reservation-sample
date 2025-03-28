@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/gofiber/fiber/v2/log"
 	"github.com/tnguven/hotel-reservation-app/internals/types"
@@ -18,7 +17,6 @@ func (h *Handler) HandleGetHotels(c *fiber.Ctx) error {
 		log.Errorf("locals %s field missing", getHotelRequestKey)
 		return utils.BadRequestError("")
 	}
-	fmt.Printf("qPARAMS: %+v", qParams)
 
 	hotels, total, err := h.hotelStore.GetHotels(c.Context(), qParams)
 	if err != nil {
@@ -28,13 +26,15 @@ func (h *Handler) HandleGetHotels(c *fiber.Ctx) error {
 		return types.NewError(err, fiber.StatusInternalServerError, "Error getting hotels")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
-		Data:   &hotels,
-		Status: fiber.StatusOK,
-		PaginationResponse: &types.PaginationResponse{
+	return c.Status(fiber.StatusOK).JSON(types.ResWithPaginate[types.ResNumericPaginate]{
+		ResGeneric: types.ResGeneric{
+			Data:   &hotels,
+			Status: fiber.StatusOK,
+		},
+		Pagination: types.ResNumericPaginate{
 			Count: total,
 			Page:  qParams.Page,
-			Limit: qParams.Limit,
+			Limit: int(qParams.Limit),
 		},
 	})
 }
@@ -47,7 +47,7 @@ func (h *Handler) HandleGetRoomsByHotelID(c *fiber.Ctx) error {
 		return types.NewError(err, fiber.StatusInternalServerError, "Error getting rooms")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
+	return c.Status(fiber.StatusOK).JSON(&types.ResGeneric{
 		Data:   &rooms,
 		Status: fiber.StatusOK,
 	})
@@ -60,7 +60,7 @@ func (h *Handler) HandleGetHotel(c *fiber.Ctx) error {
 		return types.NewError(err, fiber.StatusInternalServerError, "Error getting hotel")
 	}
 
-	return c.Status(fiber.StatusFound).JSON(&types.GenericResponse{
+	return c.Status(fiber.StatusFound).JSON(&types.ResGeneric{
 		Data:   hotel,
 		Status: fiber.StatusFound,
 	})

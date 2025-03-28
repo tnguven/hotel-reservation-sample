@@ -1,16 +1,27 @@
 package types
 
-type GenericResponse struct {
-	Msg    string                 `json:"msg,omitempty"`
-	Status int                    `json:"status,omitempty"`
-	Data   interface{}            `json:"data,omitempty"`
-	Errors map[string]interface{} `json:"error,omitempty"`
+type (
+	ResGeneric struct {
+		Msg    string                 `json:"msg,omitempty"`
+		Status int                    `json:"status,omitempty"`
+		Data   interface{}            `json:"data,omitempty"`
+		Errors map[string]interface{} `json:"error,omitempty"`
+	}
 
-	*PaginationResponse
-}
+	ResWithPaginate[T any] struct {
+		ResGeneric
+		Pagination T
+	}
 
-type PaginationResponse struct {
-	Count int64 `json:"count"`
-	Page  int64 `json:"page"`
-	Limit int64 `json:"limit"`
-}
+	ResNumericPaginate struct {
+		Count int64 `json:"count,omitempty"`
+		Page  int   `json:"page,omitempty"`
+		Limit int   `json:"limit,omitempty"`
+	}
+
+	ResCursorPaginate struct {
+		LastID string `json:"lastID"`
+		Limit  int    `json:"limit"`
+		Count  int64  `json:"count"`
+	}
+)

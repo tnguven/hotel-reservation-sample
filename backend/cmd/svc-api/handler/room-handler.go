@@ -23,11 +23,10 @@ func (h *Handler) HandleBookRoom(c *fiber.Ctx) error {
 
 	insertedBooking, err := h.bookingStore.InsertBooking(c.Context(), &params)
 	if err != nil {
-
 		return types.NewError(err, fiber.StatusInternalServerError, "Error inserting booking")
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(&types.GenericResponse{
+	return c.Status(fiber.StatusCreated).JSON(types.ResGeneric{
 		Data:   insertedBooking,
 		Status: fiber.StatusCreated,
 	})
@@ -35,18 +34,20 @@ func (h *Handler) HandleBookRoom(c *fiber.Ctx) error {
 
 func (h *Handler) HandleGetRooms(c *fiber.Ctx) error {
 	qParams := c.Locals(getRoomsRequstKey).(*types.GetRoomsRequest)
-	rooms, total, err := h.roomStore.GetRooms(c.Context(), qParams)
+	rooms, total, nextLastId, err := h.roomStore.GetRooms(c.Context(), qParams)
 	if err != nil {
 		return types.NewError(err, fiber.StatusInternalServerError, "Error getting rooms")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
-		Data:   &rooms,
-		Status: fiber.StatusOK,
-		PaginationResponse: &types.PaginationResponse{
-			Count: total,
-			Limit: qParams.Limit,
-			Page:  qParams.Page,
+	return c.Status(fiber.StatusOK).JSON(types.ResWithPaginate[types.ResCursorPaginate]{
+		ResGeneric: types.ResGeneric{
+			Data:   rooms,
+			Status: fiber.StatusOK,
+		},
+		Pagination: types.ResCursorPaginate{
+			LastID: nextLastId,
+			Limit:  int(qParams.Limit),
+			Count:  total,
 		},
 	})
 }

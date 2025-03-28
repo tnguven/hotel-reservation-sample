@@ -44,10 +44,10 @@ func WithValidation(v *Validator, getSchema SchemaFunc) fiber.Handler {
 			fmt.Println("ERROR HERE", err.Error())
 			return err
 		}
+
 		if err := v.Validate(schema); err != nil {
 			return utils.ValidatorError(err)
 		}
-
 		if name != "" {
 			c.Locals(name, schema)
 		}

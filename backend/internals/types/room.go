@@ -20,6 +20,7 @@ type Room struct {
 	BasePrice float64            `bson:"basePrice" json:"basePrice"`
 	Price     float64            `bson:"price" json:"price"`
 	HotelID   primitive.ObjectID `bson:"hotelID" json:"hotelID"`
+	Status    RoomStatus         `bson:"status" json:"status"`
 }
 
 type RoomStatus string
@@ -32,5 +33,6 @@ const (
 
 type GetRoomsRequest struct {
 	Status []RoomStatus
-	*PaginationQuery
+
+	QueryCursorPaginate[primitive.ObjectID]
 }

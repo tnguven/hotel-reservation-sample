@@ -36,6 +36,7 @@ services:
       args:
         service: svc-api
     container_name: svc-api
+    restart: unless-stopped
     environment:
       <<: *common
       LISTEN_ADDR: ${LISTEN_ADDR:-5000}
@@ -45,7 +46,7 @@ services:
     develop:
       watch:
         - action: rebuild
-          path: ./cmd/svc-api
+          path: ./cmd
         - action: rebuild
           path: ./internals
     depends_on:

@@ -5,7 +5,7 @@ import (
 )
 
 type Error struct {
-	*GenericResponse
+	*ResGeneric
 }
 
 func (err Error) Error() string {
@@ -26,7 +26,7 @@ func NewError(err error, code int, msg string) *Error {
 	}
 
 	return &Error{
-		GenericResponse: &GenericResponse{
+		ResGeneric: &ResGeneric{
 			Status: code,
 			Msg:    message,
 			Errors: errors,

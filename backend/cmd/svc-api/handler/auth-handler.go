@@ -51,7 +51,7 @@ func (h *Handler) HandleAuthenticate(configs tokener.JWTConfigs) fiber.Handler {
 			return types.NewError(err, fiber.StatusInternalServerError, "")
 		}
 
-		return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
+		return c.Status(fiber.StatusOK).JSON(&types.ResGeneric{
 			Data: &AuthResponse{
 				User:  user,
 				Token: token,
@@ -84,7 +84,7 @@ func (h *Handler) HandleSignIn(c *fiber.Ctx) error {
 		return utils.InternalServerError("can not inset the new user...")
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(&types.GenericResponse{
+	return c.Status(fiber.StatusCreated).JSON(&types.ResGeneric{
 		Data:   insertedUser,
 		Status: fiber.StatusCreated,
 	})

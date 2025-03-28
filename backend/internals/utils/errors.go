@@ -22,7 +22,7 @@ func ValidatorError(err error) *types.Error {
 	}
 
 	return &types.Error{
-		GenericResponse: &types.GenericResponse{
+		ResGeneric: &types.ResGeneric{
 			Status: http.StatusBadRequest,
 			Msg:    http.StatusText(http.StatusBadRequest),
 			Errors: errors,
@@ -32,7 +32,7 @@ func ValidatorError(err error) *types.Error {
 
 func AccessForbiddenError() *types.Error {
 	return &types.Error{
-		GenericResponse: &types.GenericResponse{
+		ResGeneric: &types.ResGeneric{
 			Status: http.StatusForbidden,
 			Msg:    http.StatusText(http.StatusForbidden),
 		},
@@ -41,7 +41,7 @@ func AccessForbiddenError() *types.Error {
 
 func NotFoundError() *types.Error {
 	return &types.Error{
-		GenericResponse: &types.GenericResponse{
+		ResGeneric: &types.ResGeneric{
 			Status: http.StatusNotFound,
 			Msg:    http.StatusText(http.StatusNotFound),
 		},
@@ -50,7 +50,7 @@ func NotFoundError() *types.Error {
 
 func UnauthorizedError() *types.Error {
 	return &types.Error{
-		GenericResponse: &types.GenericResponse{
+		ResGeneric: &types.ResGeneric{
 			Status: http.StatusUnauthorized,
 			Msg:    http.StatusText(http.StatusUnauthorized),
 		},
@@ -63,7 +63,7 @@ func ConflictError(errorMessage string) *types.Error {
 		msg = errorMessage
 	}
 	return &types.Error{
-		GenericResponse: &types.GenericResponse{
+		ResGeneric: &types.ResGeneric{
 			Status: http.StatusConflict,
 			Msg:    msg,
 		},
@@ -72,7 +72,7 @@ func ConflictError(errorMessage string) *types.Error {
 
 func InvalidCredError() *types.Error {
 	return &types.Error{
-		GenericResponse: &types.GenericResponse{
+		ResGeneric: &types.ResGeneric{
 			Status: http.StatusBadRequest,
 			Msg:    "invalid credentials",
 		},
@@ -85,7 +85,7 @@ func BadRequestError(errorMessage string) *types.Error {
 		msg = errorMessage
 	}
 	return &types.Error{
-		GenericResponse: &types.GenericResponse{
+		ResGeneric: &types.ResGeneric{
 			Status: http.StatusBadRequest,
 			Msg:    msg,
 		},
@@ -98,7 +98,7 @@ func InternalServerError(errorMessage string) *types.Error {
 		msg = errorMessage
 	}
 	return &types.Error{
-		GenericResponse: &types.GenericResponse{
+		ResGeneric: &types.ResGeneric{
 			Status: http.StatusInternalServerError,
 			Msg:    msg,
 		},

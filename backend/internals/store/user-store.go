@@ -18,7 +18,7 @@ type UserStore interface {
 
 	GetByID(context.Context, string) (*types.User, error)
 	GetUserByEmail(context.Context, string) (*types.User, error)
-	GetUsers(context.Context, *types.PaginationQuery) ([]*types.User, int64, error)
+	GetUsers(context.Context, *types.QueryNumericPaginate) ([]*types.User, int64, error)
 	InsertUser(context.Context, *types.User) (*types.User, error)
 	DeleteUser(context.Context, string) error
 	PutUser(context.Context, *types.UpdateUserParams, string) (int64, error)
@@ -60,7 +60,10 @@ func (ms *MongoUserStore) GetUserByEmail(ctx context.Context, email string) (*ty
 	return &user, nil
 }
 
-func (ms *MongoUserStore) GetUsers(ctx context.Context, pagination *types.PaginationQuery) ([]*types.User, int64, error) {
+func (ms *MongoUserStore) GetUsers(
+	ctx context.Context,
+	pagination *types.QueryNumericPaginate,
+) ([]*types.User, int64, error) {
 	pipeline := mongo.Pipeline{
 		bson.D{{Key: "$match", Value: bson.D{}}},
 		bson.D{{Key: "$facet", Value: bson.D{
@@ -125,7 +128,11 @@ func (ms *MongoUserStore) DeleteUser(ctx context.Context, id string) error {
 	return nil
 }
 
-func (ms *MongoUserStore) PutUser(ctx context.Context, params *types.UpdateUserParams, id string) (int64, error) {
+func (ms *MongoUserStore) PutUser(
+	ctx context.Context,
+	params *types.UpdateUserParams,
+	id string,
+) (int64, error) {
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return 0, err
