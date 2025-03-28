@@ -32,6 +32,9 @@ func (v *Validator) Validate(i interface{}) error {
 func validateObjectID(fl validator.FieldLevel) bool {
 	id := fl.Field().String()
 	_, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		fmt.Printf("OBJECTID is not valud %+v", err)
+	}
 	return err == nil
 }
 
@@ -44,6 +47,9 @@ func WithValidation(v *Validator, getSchema SchemaFunc) fiber.Handler {
 			fmt.Println("ERROR HERE", err.Error())
 			return err
 		}
+
+		fmt.Printf(">>>>>>, %+v", schema)
+
 		if err := v.Validate(schema); err != nil {
 			return utils.ValidatorError(err)
 		}

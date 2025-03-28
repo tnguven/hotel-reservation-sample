@@ -19,7 +19,7 @@ func (h *Handler) HandleGetBookingsAsUser(c *fiber.Ctx) error {
 		return types.NewError(err, fiber.StatusInternalServerError, "Error getting bookings")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
+	return c.Status(fiber.StatusOK).JSON(&types.ResGeneric{
 		Data:   &bookings,
 		Status: fiber.StatusOK,
 	})
@@ -31,7 +31,7 @@ func (h *Handler) HandleGetBookingsAsAdmin(c *fiber.Ctx) error {
 		return types.NewError(err, fiber.StatusInternalServerError, "Error getting bookings")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
+	return c.Status(fiber.StatusOK).JSON(&types.ResGeneric{
 		Data:   &bookings,
 		Status: fiber.StatusOK,
 	})
@@ -45,7 +45,7 @@ func (h *Handler) HandleGetBooking(c *fiber.Ctx) error {
 		return types.NewError(err, fiber.StatusInternalServerError, "Error getting booking")
 	}
 
-	return c.Status(fiber.StatusFound).JSON(&types.GenericResponse{
+	return c.Status(fiber.StatusFound).JSON(&types.ResGeneric{
 		Data:   booking,
 		Status: fiber.StatusFound,
 	})
@@ -68,7 +68,7 @@ func (h *Handler) HandleCancelBooking(c *fiber.Ctx) error {
 		}
 	}
 
-	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
+	return c.Status(fiber.StatusOK).JSON(&types.ResGeneric{
 		Msg:    fmt.Sprintf("booking %s has been canceled", bookingID),
 		Status: fiber.StatusOK,
 	})

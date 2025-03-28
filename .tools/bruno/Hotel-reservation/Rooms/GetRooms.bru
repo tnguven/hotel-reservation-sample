@@ -5,13 +5,14 @@ meta {
 }
 
 get {
-  url: http://localhost:5000/v1/rooms?lastID=""
+  url: http://localhost:5000/v1/rooms?limit=41&lastID=67e5e9b3f38e2fcc6510b15d
   body: json
   auth: none
 }
 
 params:query {
-  lastID: ""
+  limit: 41
+  lastID: 67e5e9b3f38e2fcc6510b15d
 }
 
 headers {

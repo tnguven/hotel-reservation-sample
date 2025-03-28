@@ -48,7 +48,7 @@ func TestHandleAuthenticate(t *testing.T) {
 				desc:  "should return invalid email error",
 				input: invalidEmail,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -62,7 +62,7 @@ func TestHandleAuthenticate(t *testing.T) {
 				desc:  "should return invalid password error",
 				input: invalidPassword,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -76,7 +76,7 @@ func TestHandleAuthenticate(t *testing.T) {
 				desc:  "should return invalid password error",
 				input: invalidBoth,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -145,7 +145,7 @@ func TestHandleAuthenticate(t *testing.T) {
 			t.Fatalf("expected http status of 200 but got %d", resp.StatusCode)
 		}
 
-		var result types.GenericResponse
+		var result types.ResGeneric
 		if errDecode := json.NewDecoder(resp.Body).Decode(&result); errDecode != nil {
 			t.Fatal(errDecode)
 		}
@@ -261,7 +261,7 @@ func TestHandleSignin(t *testing.T) {
 				input:  partialInput,
 				status: 400,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -278,7 +278,7 @@ func TestHandleSignin(t *testing.T) {
 				input:  invalidEmail,
 				status: 400,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -292,7 +292,7 @@ func TestHandleSignin(t *testing.T) {
 				input:  invalidMinNames,
 				status: 400,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -307,7 +307,7 @@ func TestHandleSignin(t *testing.T) {
 				input:  invalidMaxNames,
 				status: 400,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -322,7 +322,7 @@ func TestHandleSignin(t *testing.T) {
 				input:  invalidAlphaNames,
 				status: 400,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -337,7 +337,7 @@ func TestHandleSignin(t *testing.T) {
 				input:  invalidPassword,
 				status: 400,
 				expected: &types.Error{
-					GenericResponse: &types.GenericResponse{
+					ResGeneric: &types.ResGeneric{
 						Status: 400,
 						Msg:    "Bad Request",
 						Errors: map[string]interface{}{
@@ -400,7 +400,7 @@ func TestHandleSignin(t *testing.T) {
 			t.Error(err)
 		}
 
-		var result types.GenericResponse
+		var result types.ResGeneric
 		if errDecode := json.NewDecoder(resp.Body).Decode(&result); errDecode != nil {
 			t.Fatal(errDecode)
 		}

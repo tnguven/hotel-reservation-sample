@@ -34,5 +34,5 @@ const (
 type GetRoomsRequest struct {
 	Status []RoomStatus
 
-	MongoPaginateWithIDQuery
+	QueryCursorPaginate[primitive.ObjectID]
 }

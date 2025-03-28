@@ -19,7 +19,7 @@ type RoomStore interface {
 
 	InsertRoom(context.Context, *types.Room) (*types.Room, error)
 	GetRoomsByHotelID(context.Context, string) ([]*types.Room, error)
-	GetRooms(context.Context, types.GetRoomsRequest) ([]*types.Room, int64, string, error)
+	GetRooms(context.Context, *types.GetRoomsRequest) ([]*types.Room, int64, string, error)
 }
 
 type MongoRoomStore struct {
@@ -71,12 +71,9 @@ func (ms *MongoRoomStore) GetRoomsByHotelID(ctx context.Context, hotelID string)
 	return rooms, nil
 }
 
-func (ms *MongoRoomStore) GetRooms(ctx context.Context, qParams types.GetRoomsRequest) ([]*types.Room, int64, string, error) {
+func (ms *MongoRoomStore) GetRooms(ctx context.Context, qParams *types.GetRoomsRequest) ([]*types.Room, int64, string, error) {
 	now := time.Now()
-
 	pipeline := mongo.Pipeline{}
-
-	// For keyset pagination, if a LastID is provided, filter documents with _id > LastID.
 	if qParams.LastID != "" {
 		lastObjID, err := qParams.GetLastID()
 		if err != nil {

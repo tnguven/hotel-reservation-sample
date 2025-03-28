@@ -10,7 +10,7 @@ type (
 
 	ResWithPaginate[T any] struct {
 		ResGeneric
-		Pagination *T
+		Pagination T
 	}
 
 	ResNumericPaginate struct {
@@ -20,7 +20,7 @@ type (
 	}
 
 	ResCursorPaginate struct {
-		LastID string `json:"lastID,omitempty"`
+		LastID string `json:"lastID"`
 		Limit  int    `json:"limit"`
 		Count  int64  `json:"count"`
 	}

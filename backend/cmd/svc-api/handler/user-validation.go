@@ -60,5 +60,5 @@ func GetUsersRequestSchema(c *fiber.Ctx) (interface{}, string, error) {
 	limit := c.QueryInt("limit", 10)
 	page := c.QueryInt("page", 1)
 
-	return types.NewPaginationQuery(limit, page), getUsersRequestKey, nil
+	return types.NewQueryNumericPaginate(limit, page), getUsersRequestKey, nil
 }

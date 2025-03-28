@@ -26,26 +26,27 @@ func (h *Handler) HandleBookRoom(c *fiber.Ctx) error {
 		return types.NewError(err, fiber.StatusInternalServerError, "Error inserting booking")
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(types.GenericResponse{
+	return c.Status(fiber.StatusCreated).JSON(types.ResGeneric{
 		Data:   insertedBooking,
 		Status: fiber.StatusCreated,
 	})
 }
 
 func (h *Handler) HandleGetRooms(c *fiber.Ctx) error {
-	qParams := c.Locals(getRoomsRequstKey).(types.GetRoomsRequest)
+	qParams := c.Locals(getRoomsRequstKey).(*types.GetRoomsRequest)
 	rooms, total, nextLastId, err := h.roomStore.GetRooms(c.Context(), qParams)
 	if err != nil {
 		return types.NewError(err, fiber.StatusInternalServerError, "Error getting rooms")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(types.WithPaginationResponse[types.CursorPaginateResponse]{
-		GenericResponse: types.GenericResponse{
-			Data:   &rooms,
+	return c.Status(fiber.StatusOK).JSON(types.ResWithPaginate[types.ResCursorPaginate]{
+		ResGeneric: types.ResGeneric{
+			Data:   rooms,
 			Status: fiber.StatusOK,
 		},
-		Pagination: &types.CursorPaginateResponse{
+		Pagination: types.ResCursorPaginate{
 			LastID: nextLastId,
+			Limit:  int(qParams.Limit),
 			Count:  total,
 		},
 	})

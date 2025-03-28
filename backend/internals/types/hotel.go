@@ -43,12 +43,12 @@ type HotelQueryParams struct {
 	Rooms  bool `query:"room"`
 	Rating int  `query:"rating"`
 
-	PaginationQuery
+	QueryNumericPaginate
 }
 
 type GetHotelsRequest struct {
 	Rooms  bool `validate:"boolean,omitempty" query:"room"`
 	Rating int  `validate:"numeric,omitempty" query:"rating"`
 
-	PaginationQuery
+	*QueryNumericPaginate
 }

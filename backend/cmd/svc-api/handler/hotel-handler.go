@@ -47,7 +47,7 @@ func (h *Handler) HandleGetRoomsByHotelID(c *fiber.Ctx) error {
 		return types.NewError(err, fiber.StatusInternalServerError, "Error getting rooms")
 	}
 
-	return c.Status(fiber.StatusOK).JSON(&types.GenericResponse{
+	return c.Status(fiber.StatusOK).JSON(&types.ResGeneric{
 		Data:   &rooms,
 		Status: fiber.StatusOK,
 	})
@@ -60,7 +60,7 @@ func (h *Handler) HandleGetHotel(c *fiber.Ctx) error {
 		return types.NewError(err, fiber.StatusInternalServerError, "Error getting hotel")
 	}
 
-	return c.Status(fiber.StatusFound).JSON(&types.GenericResponse{
+	return c.Status(fiber.StatusFound).JSON(&types.ResGeneric{
 		Data:   hotel,
 		Status: fiber.StatusFound,
 	})

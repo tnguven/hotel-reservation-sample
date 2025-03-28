@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -19,8 +20,17 @@ func GetRoomsSchema(c *fiber.Ctx) (interface{}, string, error) {
 		status[i] = types.RoomStatus(s)
 	}
 
-	return types.GetRoomsRequest{
-		Status:                   status,
-		MongoPaginateWithIDQuery: types.NewMongoPaginateWithIDQuery(c.Query("lastID", "")),
+	lastID := c.Query("lastID", "")
+	limit := c.QueryInt("limit", 10)
+
+	fmt.Println("---------", lastID)
+	fmt.Println("LIMIT", limit)
+
+	return &types.GetRoomsRequest{
+		Status: status,
+		QueryCursorPaginate: types.NewMongoQueryCursorPaginate(
+			lastID,
+			limit,
+		),
 	}, getRoomsRequstKey, nil
 }

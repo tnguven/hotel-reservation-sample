@@ -55,7 +55,7 @@ func TestHandleGetRooms(t *testing.T) {
 			t.Fatalf("expected 200 status code but received %d", resp.StatusCode)
 		}
 
-		var response *types.GenericResponse
+		var response *types.ResGeneric
 		if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			t.Fatal(err)
 		}
@@ -100,25 +100,21 @@ func TestHandleGetRooms(t *testing.T) {
 			t.Fatalf("expected 200 status code but received %d", resp.StatusCode)
 		}
 
-		var response *types.GenericResponse
+		var response *types.ResWithPaginate[types.ResNumericPaginate]
 		if err = json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			t.Fatal(err)
 		}
 
-		if response.PaginationResponse == nil {
-			t.Fatalf("expected pagination response")
+		if response.Pagination.Limit != 2 {
+			t.Fatalf("expected limit 2, got: %d", response.Pagination.Limit)
 		}
 
-		if response.PaginationResponse.Limit != 2 {
-			t.Fatalf("expected limit 2, got: %d", response.PaginationResponse.Limit)
+		if response.Pagination.Page != 1 {
+			t.Fatalf("expected page 1, got: %d", response.Pagination.Page)
 		}
 
-		if response.PaginationResponse.Page != 1 {
-			t.Fatalf("expected page 1, got: %d", response.PaginationResponse.Page)
-		}
-
-		if response.PaginationResponse.Count != 3 {
-			t.Fatalf("expected 1 count, got: %d", response.PaginationResponse.Count)
+		if response.Pagination.Count != 3 {
+			t.Fatalf("expected 1 count, got: %d", response.Pagination.Count)
 		}
 	})
 }

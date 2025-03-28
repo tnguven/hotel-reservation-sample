@@ -1,6 +1,8 @@
 package types
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type (
 	PaginateWithID[T any] interface {
@@ -14,23 +16,23 @@ type (
 	}
 
 	QueryCursorPaginate[T any] struct {
-		LastID string `query:"limit" validate:"string"`
+		LastID string `query:"lastID" validate:"id"`
 		Limit  int64  `query:"limit" validate:"numeric,max=100,omitempty"`
 		PaginateWithID[T]
 	}
 )
 
-func NewQueryNumericPaginate(limit int, page int) QueryNumericPaginate {
-	return QueryNumericPaginate{
+func NewQueryNumericPaginate(limit int, page int) *QueryNumericPaginate {
+	return &QueryNumericPaginate{
 		Limit: int64(limit),
 		Page:  page,
 		Skip:  int64((page - 1) * limit),
 	}
 }
 
-func NewQueryCursorPaginate(lastID string, limit int) QueryCursorPaginate[primitive.ObjectID] {
+func NewMongoQueryCursorPaginate(id string, limit int) QueryCursorPaginate[primitive.ObjectID] {
 	return QueryCursorPaginate[primitive.ObjectID]{
-		LastID: lastID,
+		LastID: id,
 		Limit:  int64(limit),
 	}
 }
