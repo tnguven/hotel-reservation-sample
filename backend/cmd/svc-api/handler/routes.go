@@ -17,6 +17,9 @@ func (h *Handler) Register(
 	configs RouteConfigs,
 	validator *mid.Validator,
 ) {
+	root := app.Group("/")
+	root.Get("/health", h.HandleHealthCheck())
+
 	v1 := app.Group("/v1")
 	withAutMid := mid.JWTAuthentication(h.userStore, configs)
 
